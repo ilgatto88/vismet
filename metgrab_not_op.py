@@ -9,15 +9,10 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import smtplib
 
-"""
-# Date today, datetime and str formats
-date_today = datetime.date.today()
-str_date_today = (datetime.date.today()).strftime('%Y-%m-%d')
 
-# Date tomorrow, datetime and str formats
-date_tomorrow = date_today + datetime.timedelta(days=1)
-str_date_tomorrow = (date_today + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-"""
+# Start writing the logfile
+logfile_txt = []
+logfile_txt.append('**********************************')
 
 #Actual time
 now_time = '{0:%Y-%m-%d %H:%M}'.format(datetime.datetime.now())
@@ -29,8 +24,9 @@ mycolumns = ['TimeOfRequest',
              'DataType', 'Provider', 'Fcst_Date', 'Fcst_City', 'Fcst_Tmin_for_day1', 'Fcst_Tmax_for_day1',
              'DataType', 'Provider', 'Obs_City', 'Tmin_Date', 'Obs_Tmin', 'Tmax_Date', 'Obs_Tmax']
 
-# Start writing the logfile
-logfile_text = "\n".join(['Script started at:', str(now_time)])
+
+logfile_txt.append('Script started at:')
+logfile_txt.append(str(now_time))
 
 
 def omsz_scrape():
@@ -86,8 +82,6 @@ def omsz_scrape():
 
     # If omsz actual date is equal with today's date, then take the value from the second row of the table ->
     # to have the forecast for the next day
-
-
     if str_date_today == str_omsz_actual_first_date:
         tMinMax_omsz_df = [ now_time,
                        'omsz_fcst_for_day1', 'OMSZ', str_date_tomorrow, omsz_city,
@@ -103,9 +97,12 @@ def omsz_scrape():
                         str(soup.find_all('td', class_='T N rbg0')[0].get_text()),
                         str(soup.find_all('td', class_='T X rbg0')[0].get_text()) ]
 
+    else:
+        print('Problem with OMSZ data!')
+        logfile_text+'\nProblem with OMSZ data!'
+
 
     return tMinMax_omsz_df
-
 
 def idokep_scrape():
 
@@ -263,7 +260,6 @@ def koponyeg_scrape():
 
 def ogimet_scrape():
 
-
     # Creating the url for the request. Data from Ogimet for TMAX!, 1 day prior to the day of scrape day.
     # For TMIN, use the day of the scraping
 
@@ -280,7 +276,6 @@ def ogimet_scrape():
                       + '1800&end=' + str_date_yesterday + '1800'
 
     ogimet_city = 'Budapest'
-
 
     ###########################___TMIN___##########################
     try:
@@ -335,7 +330,6 @@ def ogimet_scrape():
 
     return tMinMax_ogimet_df
 
-
 #Fetching login data from text file
 cred_list = []
 with open('/home/pi/Documents/logfiles/login_metgrab_database.txt', 'r') as loginfile:
@@ -351,13 +345,13 @@ try:
 	conn = psycopg2.connect(dsn)
 	print('Successful login!')
 	conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-	logfile_text = "\n".join([logfile_text, 'OK: Successful login to met_project database'])
+	logfile_txt.append('OK: Successful login to met_project database')
 
 except Exception as e1:
     print(str(e1))
     print('Unable to connect to the database!')
     print('Data will be written into the grabbed.csv file!')
-    logfile_text = "\n".join([logfile_text, 'ERROR: Unable to connect to the database', 'Problem description:', str(e1), 'Data will be written into the grabbed.csv file!'])
+    logfile_txt.append('ERROR: Unable to connect to the database. Data will be written into the grabbed.csv file!')
 
     def Main():
 
@@ -370,7 +364,7 @@ except Exception as e1:
         return
 
     print('Data successfully written into the csv file.')
-    logfile_text = "\n".join([logfile_text, 'Data successfully writte into the csv file.'])
+    logfile_txt.append('Data successfully written into the csv file.')
 
 
 # Define a cursor to work with
@@ -381,9 +375,9 @@ cur = conn.cursor()
 try:
     sql_omsz = "INSERT INTO omsz_table (TimeOfRequest, DataType, Provider, Fcst_Date, Fcst_City, Fcst_Tmin_for_day1, Fcst_Tmax_for_day1) VALUES (%s, %s, %s, %s, %s, %s, %s);"
     omsz_data = tuple(omsz_scrape())
-    cur.execute(sql_omsz, omsz_data)
+    #cur.execute(sql_omsz, omsz_data)
     print('OMSZ data succesfully inserted into omsz_table.')
-    logfile_text = "\n".join([logfile_text, 'OK: OMSZ data successfully inserted into omsz_table.'])
+    logfile_txt.append('OK: OMSZ data successfully inserted into omsz_table.')
 
 #    cur.execute("SELECT * FROM omsz_table;")
 #    print(cur.fetchall())
@@ -391,98 +385,95 @@ try:
 except:
     print("Problem with OMSZ data, not inserted into omsz_table!")
     sql_omsz_error = "INSERT INTO omsz_table (TimeOfRequest) VALUES (%s);"
-    cur.execute(sql_omsz_error, now_time)
-    logfile_text = "\n".join([logfile_text, 'ERROR: Problem with OMSZ data, not inserted into omsz_table!'])
+    #cur.execute(sql_omsz_error, now_time)
+    logfile_txt.append('ERROR: Problem with OMSZ data, not inserted into omsz_table!')
 
 #Inserting Idokep data into the table
 try:
     sql_idokep = "INSERT INTO idokep_table (TimeOfRequest, DataType, Provider, Fcst_Date, Fcst_City, Fcst_Tmin_for_day1, Fcst_Tmax_for_day1) VALUES (%s, %s, %s, %s, %s, %s, %s);"
     idokep_data = tuple(idokep_scrape())
-    cur.execute(sql_idokep, idokep_data)
+    #cur.execute(sql_idokep, idokep_data)
     print('Idokep data succesfully inserted into idokep_table.')
-    logfile_text = "\n".join([logfile_text, 'OK: Idokep data successfully inserted into idokep_table.'])
+    logfile_txt.append('OK: Idokep data successfully inserted into idokep_table.')
 
 except:
     print("Problem with Idokep data, not inserted into idokep_table!")
     sql_idokep_error = "INSERT INTO idokep_table (TimeOfRequest) VALUES (%s);"
-    cur.execute(sql_idokep_error, now_time)
-    logfile_text = "\n".join([logfile_text, 'ERROR: Problem with Idokep data, not inserted into idokep_table!'])
+    #cur.execute(sql_idokep_error, now_time)
+    logfile_txt.append('ERROR: Problem with Idokep data, not inserted into idokep_table!')
 
 #Inserting Koponyeg data into the table
 try:
     sql_koponyeg = "INSERT INTO koponyeg_table (TimeOfRequest, DataType, Provider, Fcst_Date, Fcst_City, Fcst_Tmin_for_day1, Fcst_Tmax_for_day1) VALUES (%s, %s, %s, %s, %s, %s, %s);"
     koponyeg_data = tuple(koponyeg_scrape())
-    cur.execute(sql_koponyeg, koponyeg_data)
+    #cur.execute(sql_koponyeg, koponyeg_data)
     print('Koponyeg data succesfully inserted into idokep_table.')
-    logfile_text = "\n".join([logfile_text, 'OK: Koponyeg data successfully inserted into koponyeg_table.'])
+    logfile_txt.append('OK: Koponyeg data successfully inserted into koponyeg_table.')
 
 except:
     print("Problem with Koponyeg data, not inserted into koponyeg_table!")
     sql_koponyeg_error = "INSERT INTO koponyeg_table (TimeOfRequest) VALUES (%s);"
-    cur.execute(sql_koponyeg_error, now_time)
-    logfile_text = "\n".join([logfile_text, 'ERROR: Problem with Koponyeg data, not inserted into koponyeg_table!'])
+    #cur.execute(sql_koponyeg_error, now_time)
+    logfile_txt.append('ERROR: Problem with Koponyeg data, not inserted into koponyeg_table!')
 
 #Inserting Ogimet data into the table
 try:
     sql_ogimet = "INSERT INTO ogimet_table (TimeOfRequest, DataType, Provider, Obs_City, Tmin_Date, Obs_Tmin, Tmax_Date, Obs_Tmax) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
     ogimet_data = tuple(ogimet_scrape())
-    cur.execute(sql_ogimet, ogimet_data)
+    #cur.execute(sql_ogimet, ogimet_data)
     print('Ogimet data succesfully inserted into ogimet_table.')
-    logfile_text = "\n".join([logfile_text, 'OK: Ogimet data successfully inserted into ogimet_table.'])
+    logfile_txt.append('OK: Ogimet data successfully inserted into ogimet_table.')
 
 except:
     print("Problem with Ogimet data, not inserted into ogimet_table!")
     sql_ogimet_error = "INSERT INTO ogimet_table (TimeOfRequest) VALUES (%s);"
-    cur.execute(sql_ogimet_error, now_time)
-    logfile_text = "\n".join([logfile_text, 'ERROR: Problem with Ogimet data, not inserted into ogimet_table!'])
-
+    #cur.execute(sql_ogimet_error, now_time)
+    logfile_txt.append('ERROR: Problem with Ogimet data, not inserted into ogimet_table!')
 
 
 ## END OF THE MAIN SCRIPT ##
 ## SENDING MAIL ABOUT LOGGED INFORMATION ##
+# ONLY IF logfile_txt contains 'Unable' or 'Problem'
+if any('Unable' in s for s in logfile_txt) or any('Problem' in s for s in logfile_txt):
 
-#Fetching login data from text file
-cred_list_gmail = []
-with open('/home/pi/Documents/logfiles/login_gmail.txt', 'r') as loginfile_gmail:
-    for item in loginfile_gmail.read().split(','):
-        cred_list_gmail.append(item)
+    #Fetching login data from text file
+    cred_list_gmail = []
+    with open('/home/pi/Documents/logfiles/login_gmail.txt', 'r') as loginfile_gmail:
+        for item in loginfile_gmail.read().split(','):
+            cred_list_gmail.append(item)
 
-mail = cred_list_gmail[0]
-mail_pword = cred_list_gmail[1]
+    mail = cred_list_gmail[0]
+    mail_pword = cred_list_gmail[1]
 
-send_to = cred_list_gmail[0]
-mail_subject = 'metgrab.py log message'
-mail_text = logfile_text
+    send_to = cred_list_gmail[0]
+    mail_subject = 'metgrab.py log message'
+    mail_text = 'There is a problem with the script, please check the logfile!'
 
-#GMail creditentials
-gmail_sender = cred_list_gmail[0]
-gmail_passwd = cred_list_gmail[1]
+    #GMail creditentials
+    gmail_sender = cred_list_gmail[0]
+    gmail_passwd = cred_list_gmail[1]
 
-#Create connection to GMail service
-smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
-smtpObj.ehlo()
-smtpObj.starttls()
-smtpObj.login(gmail_sender, gmail_passwd)
+    #Create connection to GMail service
+    smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
+    smtpObj.ehlo()
+    smtpObj.starttls()
+    smtpObj.login(gmail_sender, gmail_passwd)
 
-mail_body = '\r\n'.join([
-    'To: %s' % send_to,
-    'From: %s' % gmail_sender,
-    'Subject: %s' % mail_subject,
-    '',
-    mail_text
-    ])
+    mail_body = '\r\n'.join([
+        'To: %s' % send_to,
+        'From: %s' % gmail_sender,
+        'Subject: %s' % mail_subject,
+        '',
+        mail_text
+        ])
 
-try:
+    #Sending the mail
     smtpObj.sendmail(gmail_sender, [send_to], mail_body)
     print('Email sent')
-except:
-    print('Error sending email')
 
-smtpObj.quit()
+    smtpObj.quit()
 
-#Writing the log text to the metgrab_logfile.txt in the folder
 with open('/home/pi/Documents/logfiles/metgrab_logfile.txt', 'a') as logger:
-    logger.write('*************************\n') 
-    logger.write(logfile_text)
-
+    for i in logfile_txt:
+        logger.write(i+'\n')
 
