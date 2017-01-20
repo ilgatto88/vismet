@@ -24,7 +24,6 @@ mycolumns = ['TimeOfRequest',
              'DataType', 'Provider', 'Fcst_Date', 'Fcst_City', 'Fcst_Tmin_for_day1', 'Fcst_Tmax_for_day1',
              'DataType', 'Provider', 'Obs_City', 'Tmin_Date', 'Obs_Tmin', 'Tmax_Date', 'Obs_Tmax']
 
-
 logfile_txt.append('Script started at:')
 logfile_txt.append(str(now_time))
 
