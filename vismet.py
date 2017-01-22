@@ -8,6 +8,7 @@ import matplotlib.ticker as mticker
 import pandas as pd
 import numpy as np
 from taylorDiagram import TaylorDiagram
+import math
 
 #General pyplot style can be used, but it makes problems with the Taylor-Diagram!
 #style.use('fivethirtyeight')
@@ -33,7 +34,7 @@ def graph_met():
 	
     #Fetching login data from text file
     cred_list = []
-    with open('/home/pi/learning_python/login.txt', 'r') as loginfile:
+    with open('/home/pi/Documents/logfiles/login_metgrab_database.txt', 'r') as loginfile:
         for item in loginfile.read().split(','):
             cred_list.append(item)
 
@@ -57,7 +58,7 @@ def graph_met():
     # Fetching provider data
     sql_get_omsz = "SELECT fcst_date, fcst_tmin_for_day1, fcst_tmax_for_day1 from omsz_table;"
     cur.execute(sql_get_omsz)
-    omsz_fetched = pd.DataFrame(cur.fetchall(), columns=['date', 'omsz_tmin', 'omsz_tmax'])
+    omsz_fetched = pd.DataFrame(cur.fetchall(), columns=['date', 'omsz_tmin', 'omsz_tmax'], dtype=int)
 
     sql_get_idokep = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 from idokep_table;"
     cur.execute(sql_get_idokep)
@@ -82,6 +83,8 @@ def graph_met():
     merged_ogimet = pd.merge(ogimet_fetched_uncorrected_tmin, ogimet_fetched_uncorrected_tmax, on='date')
     merged_full = pd.merge(concat_prov, merged_ogimet)
 
+    merged_full_NArepl = merged_full.replace(pd.np.nan, 'NA')
+    
     #Calculating data for the Taylor Diagram
     #Calculating standard deviation of the observation
     ogimet_stdev = np.std(merged_full['ogimet_tmin']+merged_full['ogimet_tmax'])
@@ -94,11 +97,31 @@ def graph_met():
     df_for_corr_koponyeg = pd.DataFrame({'Koponyeg': merged_full['koponyeg_tmin'].append(merged_full['koponyeg_tmax']),
                                             'Ogimet': merged_full['ogimet_tmin'].append(merged_full['ogimet_tmax'])})
 
- 
+    print(merged_full_NArepl[['date', 'omsz_tmin']])
+    list4rmse = []
+    for i in range(4, len(merged_full_NArepl[['date', 'omsz_tmin', 'omsz_tmax', 'ogimet_tmin', 'ogimet_tmax']])):
+        l1 = []
+        for k in range(0,-5,-1):
+            if merged_full_NArepl['omsz_tmin'][i+k] != 'NA' and merged_full_NArepl['ogimet_tmin'][i+k] != 'NA':
+                l1.append((merged_full_NArepl['omsz_tmin'][i+k]-merged_full_NArepl['ogimet_tmin'][i+k])**2)
+            else:
+                l1.append(None)
+        rmse = round(math.sqrt(sum(filter(lambda i: isinstance(i, float), l1))/5.0), 2)
+        #rmse = round(math.sqrt(avg_mse), 2)
+        list4rmse.append([merged_full_NArepl['date'][i], rmse])
+
+
+    print(list4rmse)
+    newdf = pd.DataFrame.from_records(list4rmse, columns=['date', 'rmse5day_omsz'])
+    print(newdf)
+
     #Calculating 5 day moving RMSE of providers forecast vs observation
-    print(df_for_corr_omsz)
+    #for row in merged_full['omsz_tmin']:
+        #print(row)
 
+graph_met()
 
+"""
     #Defining sample data (providers stdev, corr and name)
     samples = dict(alap=[[np.std(merged_full['omsz_tmin']+merged_full['omsz_tmax']),
                             round(df_for_corr_omsz.corr()['OMSZ'][1], 4), "OMSZ", '^'],
@@ -212,7 +235,7 @@ def graph_met():
     fig.savefig('/home/pi/Desktop/1.png', facecolor=fig.get_facecolor())
 
 graph_met()
-
+"""
 """
     ax1_left.plot_date(list(merged_full['date']), list(merged_full['omsz_tmin']), '-', label='omsz_tmin')
     ax1_left.plot_date(list(merged_full['date']), list(merged_full['omsz_tmax']), '-', label='omsz_tmax')
