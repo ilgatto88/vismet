@@ -168,19 +168,24 @@ def graph_met():
         rmse_koponyeg_min_max = round((rmse_koponyeg_tmin + rmse_koponyeg_tmax) / 2.0, 2)
         list4rmse_koponyeg.append([merged_full_NArepl['date'][i], rmse_koponyeg_min_max])
 
-    koponyeg_rmse5day_df = pd.DataFrame.from_records(list4rmse_koponyeg, columns=['date', 'rmse5day_idokep'])
+    koponyeg_rmse5day_df = pd.DataFrame.from_records(list4rmse_koponyeg, columns=['date', 'rmse5day_koponyeg'])
 
-    print(omsz_rmse5day_df)
-    print(idokep_rmse5day_df)
-    print(koponyeg_rmse5day_df)
+    #Merging providers rmse dataframes
+    providers_rmse5day_df_omsz_idokep = omsz_rmse5day_df.merge(idokep_rmse5day_df, how='inner', on='date')
+    providers_rmse5day_df = providers_rmse5day_df_omsz_idokep.merge(koponyeg_rmse5day_df, how='inner', on='date')
+    providers_rmse5day_df.columns = ['date', 'rmse5day_omsz', 'rmse5day_idokep', 'rmse5day_koponyeg']
+    print(providers_rmse5day_df)
 
-    #providers_rmse5day_df = pd.DataFrame.from_records([date4_rmse, list4rmse_omsz, list4rmse_idokep, list4rmse_koponyeg], columns=['date', 'rmse5day_omsz', 'rmse5day_idokep', 'rmse5day_koponyeg'])
 
-    #print(providers_rmse5day_df)
+    #Draw 1st diagram
+    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_omsz']), '-', label='rmse5day_omsz', color='red')
+    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_idokep']), '-', label='rmse5day_idokep', color='blue')
+    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_koponyeg']), '-', label='rmse5day_koponyeg', color='black')
+    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
+    ax1_left.grid(True)
 
-graph_met()
 
-"""
+    #Draving Taylor-diagram
     #Defining sample data (providers stdev, corr and name)
     samples = dict(alap=[[np.std(merged_full['omsz_tmin']+merged_full['omsz_tmax']),
                             round(df_for_corr_omsz.corr()['OMSZ'][1], 4), "OMSZ", '^'],
@@ -294,7 +299,7 @@ graph_met()
     fig.savefig('/home/pi/Desktop/1.png', facecolor=fig.get_facecolor())
 
 graph_met()
-"""
+
 """
     ax1_left.plot_date(list(merged_full['date']), list(merged_full['omsz_tmin']), '-', label='omsz_tmin')
     ax1_left.plot_date(list(merged_full['date']), list(merged_full['omsz_tmax']), '-', label='omsz_tmax')
