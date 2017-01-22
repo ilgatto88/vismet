@@ -178,11 +178,43 @@ def graph_met():
 
 
     #Draw 1st diagram
-    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_omsz']), '-', label='rmse5day_omsz', color='red')
-    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_idokep']), '-', label='rmse5day_idokep', color='blue')
-    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_koponyeg']), '-', label='rmse5day_koponyeg', color='black')
+    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_omsz']),
+        '-',
+        linewidth = 2,
+        label='rmse5day_omsz',
+        color='red')
+    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_idokep']),
+        '-',
+        linewidth = 2,
+        label='rmse5day_idokep',
+        color='blue')
+    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_koponyeg']),
+        '-',
+        linewidth = 2,
+        label='rmse5day_koponyeg',
+        color='black')
     ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
+
+    #Searching for absolute Tmin/Tmax values
+    #Ymin
+    rmse_mins = [ float(providers_rmse5day_df['rmse5day_omsz'].min()),
+                    float(providers_rmse5day_df['rmse5day_idokep'].min()),
+                    float(providers_rmse5day_df['rmse5day_koponyeg'].min()) ]
+    ymin_diag1 = math.floor(min(rmse_mins))
+    #Ymax
+    rmse_maxs = [ float(providers_rmse5day_df['rmse5day_omsz'].max()),
+                    float(providers_rmse5day_df['rmse5day_idokep'].max()),
+                    float(providers_rmse5day_df['rmse5day_koponyeg'].max()) ]
+    ymax_diag1 = math.ceil(max(rmse_maxs))
+
+    
+    print(ymin_diag1, ymax_diag1)
+    if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 = ymin_diag1 - 1
+    if abs(ymax_diag1 - min(rmse_maxs)) < 0.2: ymax_diag1 = ymax_diag1 + 1
+
+    plt.ylim((ymin_diag1, ymax_diag1))
     ax1_left.grid(True)
+    #ax1_left.set_ylim([ymin_diag1,ymax_diag1])
 
 
     #Draving Taylor-diagram
@@ -348,26 +380,4 @@ graph_met()
     
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
     fig.savefig('/home/pi/Desktop/test.png', facecolor=fig.get_facecolor())
-"""
-
-
-"""
-#Searching for absolute Tmin/Tmax values
-
-ymin = min(x for x in omsz_vs_ogimet if x is not None)
-ymax = max(x for x in omsz_vs_ogimet if x is not None)
-
-if ymin < 0: ymin = ymin -1
-elif ymin == 0: ymin = ymin - 1
-elif ymin > 0: ymin = ymin + 1
-
-if ymax < 0: ymax = ymax - 1
-elif ymax == 0: ymax = ymax - 1
-elif ymax > 0: ymax = ymax + 1
-
-
-plt.ylim(ymin,ymax)
-plt.legend()
-
-plt.show()
 """
