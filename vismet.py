@@ -207,15 +207,11 @@ def graph_met():
                     float(providers_rmse5day_df['rmse5day_koponyeg'].max()) ]
     ymax_diag1 = math.ceil(max(rmse_maxs))
 
-    
-    print(ymin_diag1, ymax_diag1)
     if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 = ymin_diag1 - 1
     if abs(ymax_diag1 - min(rmse_maxs)) < 0.2: ymax_diag1 = ymax_diag1 + 1
-
-    plt.ylim((ymin_diag1, ymax_diag1))
+    ax1_left.set_ylim([ymin_diag1,ymax_diag1])
     ax1_left.grid(True)
-    #ax1_left.set_ylim([ymin_diag1,ymax_diag1])
-
+    
 
     #Draving Taylor-diagram
     #Defining sample data (providers stdev, corr and name)
