@@ -83,6 +83,7 @@ def graph_met():
     merged_ogimet = pd.merge(ogimet_fetched_uncorrected_tmin, ogimet_fetched_uncorrected_tmax, on='date')
     merged_full = pd.merge(concat_prov, merged_ogimet)
 
+    #Replacing nan to NA (string)
     merged_full_NArepl = merged_full.replace(pd.np.nan, 'NA')
     
     #Calculating data for the Taylor Diagram
@@ -97,27 +98,85 @@ def graph_met():
     df_for_corr_koponyeg = pd.DataFrame({'Koponyeg': merged_full['koponyeg_tmin'].append(merged_full['koponyeg_tmax']),
                                             'Ogimet': merged_full['ogimet_tmin'].append(merged_full['ogimet_tmax'])})
 
-    print(merged_full_NArepl[['date', 'omsz_tmin']])
-    list4rmse = []
+    ######Calculating 5 day moving RMSE of providers forecast vs observation######
+    ###OMSZ Tmin & Tmax
+    list4rmse_omsz = []
     for i in range(4, len(merged_full_NArepl[['date', 'omsz_tmin', 'omsz_tmax', 'ogimet_tmin', 'ogimet_tmax']])):
-        l1 = []
+        l1_omsz_tmin = []
+        l1_omsz_tmax = []
         for k in range(0,-5,-1):
             if merged_full_NArepl['omsz_tmin'][i+k] != 'NA' and merged_full_NArepl['ogimet_tmin'][i+k] != 'NA':
-                l1.append((merged_full_NArepl['omsz_tmin'][i+k]-merged_full_NArepl['ogimet_tmin'][i+k])**2)
+                l1_omsz_tmin.append((merged_full_NArepl['omsz_tmin'][i+k]-merged_full_NArepl['ogimet_tmin'][i+k])**2)
             else:
-                l1.append(None)
-        rmse = round(math.sqrt(sum(filter(lambda i: isinstance(i, float), l1))/5.0), 2)
-        #rmse = round(math.sqrt(avg_mse), 2)
-        list4rmse.append([merged_full_NArepl['date'][i], rmse])
+                l1_omsz_tmin.append(None)
 
+            if merged_full_NArepl['omsz_tmax'][i+k] != 'NA' and merged_full_NArepl['ogimet_tmax'][i+k] != 'NA':
+                l1_omsz_tmax.append((merged_full_NArepl['omsz_tmax'][i+k]-merged_full_NArepl['ogimet_tmax'][i+k])**2)
+            else:
+                l1_omsz_tmax.append(None)
 
-    print(list4rmse)
-    newdf = pd.DataFrame.from_records(list4rmse, columns=['date', 'rmse5day_omsz'])
-    print(newdf)
+        rmse_omsz_tmin = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_omsz_tmin))/5.0)
+        rmse_omsz_tmax = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_omsz_tmax))/5.0)
+        rmse_omsz_min_max = round((rmse_omsz_tmin + rmse_omsz_tmax) / 2.0, 2)
+        list4rmse_omsz.append([merged_full_NArepl['date'][i], rmse_omsz_min_max])
 
-    #Calculating 5 day moving RMSE of providers forecast vs observation
-    #for row in merged_full['omsz_tmin']:
-        #print(row)
+    omsz_rmse5day_df = pd.DataFrame.from_records(list4rmse_omsz, columns=['date', 'rmse5day_omsz'])
+ 
+    ######Calculating 5 day moving RMSE of providers forecast vs observation######
+    ###Idokep Tmin & Tmax
+    list4rmse_idokep = []
+    for i in range(4, len(merged_full_NArepl[['date', 'idokep_tmin', 'idokep_tmax', 'ogimet_tmin', 'ogimet_tmax']])):
+        l1_idokep_tmin = []
+        l1_idokep_tmax = []
+        for k in range(0,-5,-1):
+            if merged_full_NArepl['idokep_tmin'][i+k] != 'NA' and merged_full_NArepl['ogimet_tmin'][i+k] != 'NA':
+                l1_idokep_tmin.append((merged_full_NArepl['idokep_tmin'][i+k]-merged_full_NArepl['ogimet_tmin'][i+k])**2)
+            else:
+                l1_idokep_tmin.append(None)
+
+            if merged_full_NArepl['idokep_tmax'][i+k] != 'NA' and merged_full_NArepl['ogimet_tmax'][i+k] != 'NA':
+                l1_idokep_tmax.append((merged_full_NArepl['idokep_tmax'][i+k]-merged_full_NArepl['ogimet_tmax'][i+k])**2)
+            else:
+                l1_idokep_tmax.append(None)
+
+        rmse_idokep_tmin = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_idokep_tmin))/5.0)
+        rmse_idokep_tmax = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_idokep_tmax))/5.0)
+        rmse_idokep_min_max = round((rmse_idokep_tmin + rmse_idokep_tmax) / 2.0, 2)
+        list4rmse_idokep.append([merged_full_NArepl['date'][i], rmse_idokep_min_max])
+
+    idokep_rmse5day_df = pd.DataFrame.from_records(list4rmse_idokep, columns=['date', 'rmse5day_idokep'])
+
+    ######Calculating 5 day moving RMSE of providers forecast vs observation######
+    ###koponyeg Tmin & Tmax
+    list4rmse_koponyeg = []
+    for i in range(4, len(merged_full_NArepl[['date', 'koponyeg_tmin', 'koponyeg_tmax', 'ogimet_tmin', 'ogimet_tmax']])):
+        l1_koponyeg_tmin = []
+        l1_koponyeg_tmax = []
+        for k in range(0,-5,-1):
+            if merged_full_NArepl['koponyeg_tmin'][i+k] != 'NA' and merged_full_NArepl['ogimet_tmin'][i+k] != 'NA':
+                l1_koponyeg_tmin.append((merged_full_NArepl['koponyeg_tmin'][i+k]-merged_full_NArepl['ogimet_tmin'][i+k])**2)
+            else:
+                l1_koponyeg_tmin.append(None)
+
+            if merged_full_NArepl['koponyeg_tmax'][i+k] != 'NA' and merged_full_NArepl['ogimet_tmax'][i+k] != 'NA':
+                l1_koponyeg_tmax.append((merged_full_NArepl['koponyeg_tmax'][i+k]-merged_full_NArepl['ogimet_tmax'][i+k])**2)
+            else:
+                l1_koponyeg_tmax.append(None)
+
+        rmse_koponyeg_tmin = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_koponyeg_tmin))/5.0)
+        rmse_koponyeg_tmax = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_koponyeg_tmax))/5.0)
+        rmse_koponyeg_min_max = round((rmse_koponyeg_tmin + rmse_koponyeg_tmax) / 2.0, 2)
+        list4rmse_koponyeg.append([merged_full_NArepl['date'][i], rmse_koponyeg_min_max])
+
+    koponyeg_rmse5day_df = pd.DataFrame.from_records(list4rmse_koponyeg, columns=['date', 'rmse5day_idokep'])
+
+    print(omsz_rmse5day_df)
+    print(idokep_rmse5day_df)
+    print(koponyeg_rmse5day_df)
+
+    #providers_rmse5day_df = pd.DataFrame.from_records([date4_rmse, list4rmse_omsz, list4rmse_idokep, list4rmse_koponyeg], columns=['date', 'rmse5day_omsz', 'rmse5day_idokep', 'rmse5day_koponyeg'])
+
+    #print(providers_rmse5day_df)
 
 graph_met()
 
