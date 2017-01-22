@@ -3,7 +3,7 @@
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import matplotlib.pyplot as plt
-#from matplotlib import style
+from matplotlib import style
 import matplotlib.ticker as mticker
 import pandas as pd
 import numpy as np
@@ -11,9 +11,19 @@ from taylorDiagram import TaylorDiagram
 import math
 
 #General pyplot style can be used, but it makes problems with the Taylor-Diagram!
-#style.use('fivethirtyeight')
-#Testing....
-
+style.use('dark_background')
+"""
+plt.rcParams['font.serif'] = 'Ubuntu'
+plt.rcParams['font.monospace'] = 'Ubuntu Mono'
+plt.rcParams['font.size'] = 15
+plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['axes.labelweight'] = 'bold'
+plt.rcParams['lines.linewidth'] = 2
+plt.rcParams['axes.titlesize'] = 10
+plt.rcParams['xtick.labelsize'] = 8
+plt.rcParams['ytick.labelsize'] = 8
+plt.rcParams['legend.fontsize'] = 10
+"""
 desired_width = 320
 pd.set_option('display.width', desired_width)
 
@@ -180,19 +190,16 @@ def graph_met():
     #Draw 1st diagram
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_omsz']),
         '-',
-        linewidth = 2,
         label='rmse5day_omsz',
         color='red')
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_idokep']),
         '-',
-        linewidth = 2,
         label='rmse5day_idokep',
         color='blue')
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_koponyeg']),
         '-',
-        linewidth = 2,
         label='rmse5day_koponyeg',
-        color='black')
+        color='grey')
     ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
 
     #Searching for absolute Tmin/Tmax values
