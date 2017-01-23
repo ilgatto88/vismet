@@ -287,10 +287,8 @@ def ogimet_scrape():
         page_Tmin = urllib.request.urlopen(url_ogimet_Tmin).read()
         soup_Tmin = BeautifulSoup(page_Tmin, 'lxml')
 
-
         soupfile_Tmin = soup_Tmin.find('p').getText()
-        synop_code_Tmin = (soupfile_Tmin.strip('\n')[soupfile_Tmin.strip('\n').index('333'):])[4:9]
-
+        synop_code_Tmin = (soupfile_Tmin.strip('\n')[soupfile_Tmin.strip('\n').index(' 333'):])[5:10]
 
         global synop_Tmin
 
@@ -328,6 +326,7 @@ def ogimet_scrape():
         tMinMax_ogimet_df = [ now_time, 'ogimet_obs_data', None, None, None, None, None, None ]
 
     return tMinMax_ogimet_df
+
 
 #Fetching login data from text file
 cred_list = []
