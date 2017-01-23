@@ -28,19 +28,53 @@ plt.rcParams['legend.fontsize'] = 10
 desired_width = 320
 pd.set_option('display.width', desired_width)
 
+
 #Start of the graphing function
 def graph_met():
+
+    #Define costumization settings (0: label, 1: marker, 2: color, 3: linestyle, 4: figsize, 5: alpha)
+    cost_settings = dict(set1=[['OMSZ', '^', '#919191', '-', 100, 1.0],
+                                ['Idokep', 'v', '#215edf', '-', 100, 0.9],
+                                ['Koponyeg', 'D', '#ea9f11', '-', 100, 0.7]])
+
+    base_linewidth = 3
+    grid_color = '#c2c4c2'
+    grid_linestyle = '--'
+    #print(cost_settings['set1'][0][5])
+
     fig = plt.figure()
 
     #Define diagram, subplots
     ax1_left = plt.subplot2grid((4, 10), (0, 0), rowspan=2, colspan=6)
+    ax1_left.spines["top"].set_visible(False)
+    ax1_left.spines["bottom"].set_visible(False)    
+    ax1_left.spines["right"].set_visible(False)    
+    ax1_left.spines["left"].set_visible(False)
+    ax1_left.get_xaxis().tick_bottom()    
+    ax1_left.get_yaxis().tick_left()
     plt.title('Minimum & Maximum Temperature Forecast Verification: OMSZ vs. Időkép vs. Köpönyeg')
     plt.ylabel('5-day moving Tmin&Tmax Avg RMSE')
+
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1, colspan=1)
+    ax2.spines["top"].set_visible(False)
+    ax2.spines["bottom"].set_visible(False)    
+    ax2.spines["right"].set_visible(False)    
+    ax2.spines["left"].set_visible(False)
+    ax2.get_xaxis().tick_bottom()    
+    ax2.get_yaxis().tick_left()
     plt.ylabel('Tmin: Fcst vs. Obs')
+
     ax3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, colspan=1, sharex=ax2)
+    ax3.spines["top"].set_visible(False)
+    ax3.spines["bottom"].set_visible(False)    
+    ax3.spines["right"].set_visible(False)    
+    ax3.spines["left"].set_visible(False)
+    ax3.get_xaxis().tick_bottom()    
+    ax3.get_yaxis().tick_left()
     plt.ylabel('Tmax: Fcst vs. Obs')
 	
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)#, wspace=0.2, hspace=0)
+
     #Fetching login data from text file
     cred_list = []
     with open('/home/pi/Documents/logfiles/login_metgrab_database.txt', 'r') as loginfile:
@@ -185,28 +219,24 @@ def graph_met():
     providers_rmse5day_df.columns = ['date', 'rmse5day_omsz', 'rmse5day_idokep', 'rmse5day_koponyeg']
 
 
-    print(merged_full['date'][5])
-    #start = len(merged_full['date'][5]-1:)
-    #print(start)
-
     #Draw 1st diagram
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_omsz']),
-        '-',
+        cost_settings['set1'][0][3],
         label='rmse5day_omsz',
-        linewidth=1.5,
-        color='red')
+        linewidth=base_linewidth,
+        color=cost_settings['set1'][0][2])
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_idokep']),
-        '-',
+        cost_settings['set1'][1][3],
         label='rmse5day_idokep',
-        linewidth=1.5,
-        color='blue')
+        linewidth=base_linewidth,
+        color=cost_settings['set1'][1][2])
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_koponyeg']),
-        '-',
+        cost_settings['set1'][2][3],
         label='rmse5day_koponyeg',
-        linewidth=1.5,
-        color='grey')
+        linewidth=base_linewidth,
+        color=cost_settings['set1'][2][2])
     ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
-
+    
     #Searching for absolute Tmin/Tmax values
     #Ymin
     rmse_mins = [ float(providers_rmse5day_df['rmse5day_omsz'].min()),
@@ -223,7 +253,6 @@ def graph_met():
     if abs(ymax_diag1 - max(rmse_maxs)) < 0.2: ymax_diag1 += 1
     ax1_left.set_ylim([ymin_diag1,ymax_diag1])
     plt.setp(ax1_left.get_xticklabels(), visible=True)
-    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)#, wspace=0.2, hspace=0)
 
     #for label in ax1_left.xaxis.get_ticklabels():
         #label.set_rotation(45)
@@ -231,17 +260,18 @@ def graph_met():
     ax1_left.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
     ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(6))
 
-    ax1_left.grid(True, linestyle='-', color='#abadab')
+    ax1_left.grid(True, linestyle=grid_linestyle, color=grid_color)
     
     #######################################################
     ###################Taylor-diagram######################
     #Defining sample data (providers stdev, corr and name)
+
     samples = dict(alap=[[np.std(merged_full['omsz_tmin']+merged_full['omsz_tmax']),
-                            round(df_for_corr_omsz.corr()['OMSZ'][1], 4), "OMSZ", '^', '#e2380d'],
+                            round(df_for_corr_omsz.corr()['OMSZ'][1], 4), cost_settings['set1'][0][0], cost_settings['set1'][0][1], cost_settings['set1'][0][2]],
                          [np.std(merged_full['idokep_tmin'] + merged_full['idokep_tmax']),
-                            round(df_for_corr_idokep.corr()['Idokep'][1], 4), "Idokep", 'v', '#3752b2'],
+                            round(df_for_corr_idokep.corr()['Idokep'][1], 4), cost_settings['set1'][1][0], cost_settings['set1'][1][1], cost_settings['set1'][1][2]],
                          [np.std(merged_full['koponyeg_tmin'] + merged_full['koponyeg_tmax']),
-                            round(df_for_corr_koponyeg.corr()['Koponyeg'][1], 4), "Koponyeg", 'D', '#1fba27']])
+                            round(df_for_corr_koponyeg.corr()['Koponyeg'][1], 4), cost_settings['set1'][2][0], cost_settings['set1'][2][1], cost_settings['set1'][2][2]]])
 
     #Define plotting colors, cm is colormap, Set1 is the first cm set
     colors = plt.matplotlib.cm.Set1(np.linspace(0, 1, len(merged_full['ogimet_tmin'])))
@@ -305,25 +335,28 @@ def graph_met():
                 numpoints=1, bbox_to_anchor = (0.95, 0.95))
 
     #Draw 2nd diagram
-    ax2.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmin']), '-', label='ogimet_tmin', linewidth=1.5, color='black')
+    ax2.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmin']), '-', label='ogimet_tmin', linewidth=base_linewidth, color='black')
     ax2.scatter(list(merged_full['date']), list(merged_full['omsz_tmin']),
                 label='omsz_tmin',
-                marker='^',
+                marker=cost_settings['set1'][0][1],
                 edgecolor='black',
-                s=70,
-                color='#e2380d')
+                s=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][0][5],
+                color=cost_settings['set1'][0][2])
     ax2.scatter(list(merged_full['date']), list(merged_full['idokep_tmin']),
                 label='idokep_tmin',
-                marker='v',
+                marker=cost_settings['set1'][1][1],
                 edgecolor='black',
-                s=50,
-                color='#3752b2')
+                s=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][1][5],
+                color=cost_settings['set1'][1][2])
     ax2.scatter(list(merged_full['date']), list(merged_full['koponyeg_tmin']),
                 label='koponyeg_tmin',
-                marker='D',
-                s=50,
+                marker=cost_settings['set1'][2][1],
                 edgecolor='black',
-                color='#1fba27')
+                s=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][2][5],
+                color=cost_settings['set1'][2][2])
     ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
     plt.setp(ax2.get_xticklabels(), visible=False)
 
@@ -345,28 +378,32 @@ def graph_met():
     if abs(ymax_diag2 - max(maxs_diag2)) < 1: ymax_diag2 += 1
     ax2.set_ylim([ymin_diag2,ymax_diag2])
 
-    ax2.grid(True, linestyle='-', color='#abadab')
+    ax2.grid(True, linestyle=grid_linestyle, color=grid_color)
+
 
     #Draw 3rd diagram
-    ax3.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmax']), '-', label='ogimet_tmax', linewidth=1.5, color='black')
+    ax3.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmax']), '-', label='ogimet_tmax', linewidth=base_linewidth, color='black')
     ax3.scatter(list(merged_full['date']), list(merged_full['omsz_tmax']),
                 label='omsz_tmax',
-                marker='^',
+                marker=cost_settings['set1'][0][1],
                 edgecolor='black',
-                s=70,
-                color='#e2380d')
+                s=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][0][5],
+                color=cost_settings['set1'][0][2])
     ax3.scatter(list(merged_full['date']), list(merged_full['idokep_tmax']),
                 label='idokep_tmax',
-                marker='v',
+                marker=cost_settings['set1'][1][1],
                 edgecolor='black',
-                s=50,
-                color='#3752b2')
+                s=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][1][5],
+                color=cost_settings['set1'][1][2])
     ax3.scatter(list(merged_full['date']), list(merged_full['koponyeg_tmax']),
                 label='koponyeg_tmax',
-                marker='D',
-                s=50,
+                marker=cost_settings['set1'][2][1],
                 edgecolor='black',
-                color='#1fba27')
+                s=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][2][5],
+                color=cost_settings['set1'][2][2])
     ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
     ax3.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
 
@@ -389,10 +426,10 @@ def graph_met():
     ax3.set_ylim([ymin_diag3,ymax_diag3])
 
 
-    ax3.grid(True, linestyle='-', color='#abadab')
+    ax3.grid(True, linestyle=grid_linestyle, color=grid_color)
 
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
-    fig.savefig('/home/pi/Desktop/1.png', facecolor=fig.get_facecolor())
+    fig.savefig('/home/pi/Desktop/1.png', facecolor='white')#fig.get_facecolor())
 
 graph_met()
