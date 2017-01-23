@@ -306,7 +306,7 @@ def ogimet_scrape():
         soup_Tmax = BeautifulSoup(page_Tmax, 'lxml')
 
         soupfile_Tmax = soup_Tmax.find('p').getText()
-        synop_code_Tmax = (soupfile_Tmax.strip('\n')[soupfile_Tmax.strip('\n').index('333'):])[4:9]
+        synop_code_Tmax = (soupfile_Tmax.strip('\n')[soupfile_Tmax.strip('\n').index(' 333'):])[5:10]
 
         global synop_Tmax
 
@@ -471,6 +471,6 @@ if any('Unable' in s for s in logfile_txt) or any('Problem' in s for s in logfil
 
     smtpObj.quit()
 
-with open('/home/pi/Documents/logfiles/metgrab_logfile.txt', 'a') as logger:
-    for i in logfile_txt:
-        logger.write(i+'\n')
+#with open('/home/pi/Documents/logfiles/metgrab_logfile.txt', 'a') as logger:
+    #for i in logfile_txt:
+        #logger.write(i+'\n')
