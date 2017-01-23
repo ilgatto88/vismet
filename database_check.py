@@ -16,7 +16,7 @@ dbcheck = True
 #Fetching login data from text file
 try:
     cred_list = []
-    with open('/home/pi/Documents/logfiles/login_metgrab_databas.txt', 'r') as loginfile:
+    with open('/home/pi/Documents/logfiles/login_metgrab_database.txt', 'r') as loginfile:
         for item in loginfile.read().split(','):
             cred_list.append(item)
 
