@@ -3,15 +3,16 @@
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import matplotlib.pyplot as plt
-from matplotlib import style
+#from matplotlib import style
 import matplotlib.ticker as mticker
+import matplotlib.dates as mdates
 import pandas as pd
 import numpy as np
 from taylorDiagram import TaylorDiagram
 import math
 
 #General pyplot style can be used, but it makes problems with the Taylor-Diagram!
-style.use('dark_background')
+#style.use('fivethirtyeight')
 """
 plt.rcParams['font.serif'] = 'Ubuntu'
 plt.rcParams['font.monospace'] = 'Ubuntu Mono'
@@ -33,14 +34,12 @@ def graph_met():
 
     #Define diagram, subplots
     ax1_left = plt.subplot2grid((4, 10), (0, 0), rowspan=2, colspan=6)
-    #plt.title('OMSZ')
-    #plt.ylabel('Tmin & Tmax')
+    plt.title('Minimum & Maximum Temperature Forecast Verification: OMSZ vs. Időkép vs. Köpönyeg')
+    plt.ylabel('5-day moving Tmin&Tmax Avg RMSE')
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1, colspan=1)
-    #plt.title('Köpönyeg')
-    #plt.ylabel('Tmin & Tmax')
+    plt.ylabel('Tmin: Fcst vs. Obs')
     ax3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, colspan=1, sharex=ax2)
-    #plt.title('Mért adatok')
-    #plt.ylabel('Tmin & Tmax & Avg')
+    plt.ylabel('Tmax: Fcst vs. Obs')
 	
     #Fetching login data from text file
     cred_list = []
@@ -66,24 +65,24 @@ def graph_met():
     cur = conn.cursor()
 
     # Fetching provider data
-    sql_get_omsz = "SELECT fcst_date, fcst_tmin_for_day1, fcst_tmax_for_day1 from omsz_table;"
+    sql_get_omsz = "SELECT fcst_date, fcst_tmin_for_day1, fcst_tmax_for_day1 FROM omsz_table ORDER BY timeofrequest DESC LIMIT 20;"
     cur.execute(sql_get_omsz)
     omsz_fetched = pd.DataFrame(cur.fetchall(), columns=['date', 'omsz_tmin', 'omsz_tmax'], dtype=int)
 
-    sql_get_idokep = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 from idokep_table;"
+    sql_get_idokep = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 FROM idokep_table ORDER BY timeofrequest DESC LIMIT 20;"
     cur.execute(sql_get_idokep)
     idokep_fetched = pd.DataFrame(cur.fetchall(), columns=['idokep_tmin', 'idokep_tmax'])
 
-    sql_get_koponyeg = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 from koponyeg_table;"
+    sql_get_koponyeg = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 FROM koponyeg_table ORDER BY timeofrequest DESC LIMIT 20;"
     cur.execute(sql_get_koponyeg)
     koponyeg_fetched = pd.DataFrame(cur.fetchall(), columns=['koponyeg_tmin', 'koponyeg_tmax'])
 
-    sql_get_ogimet = "SELECT Tmin_date, Obs_Tmin from ogimet_table;"
-    cur.execute(sql_get_ogimet)
+    sql_get_ogimet_tmin = "SELECT Tmin_date, Obs_Tmin FROM ogimet_table ORDER BY timeofrequest DESC LIMIT 20;"
+    cur.execute(sql_get_ogimet_tmin)
     ogimet_fetched_uncorrected_tmin = pd.DataFrame(cur.fetchall(), columns=['date', 'ogimet_tmin'])
 
-    sql_get_ogimet = "SELECT Tmax_date, Obs_Tmax from ogimet_table;"
-    cur.execute(sql_get_ogimet)
+    sql_get_ogimet_tmax = "SELECT Tmax_date, Obs_Tmax FROM ogimet_table ORDER BY timeofrequest DESC LIMIT 20;"
+    cur.execute(sql_get_ogimet_tmax)
     ogimet_fetched_uncorrected_tmax = pd.DataFrame(cur.fetchall(), columns=['date', 'ogimet_tmax'])
 
     #Putting provider data into a DataFrame
@@ -184,21 +183,27 @@ def graph_met():
     providers_rmse5day_df_omsz_idokep = omsz_rmse5day_df.merge(idokep_rmse5day_df, how='inner', on='date')
     providers_rmse5day_df = providers_rmse5day_df_omsz_idokep.merge(koponyeg_rmse5day_df, how='inner', on='date')
     providers_rmse5day_df.columns = ['date', 'rmse5day_omsz', 'rmse5day_idokep', 'rmse5day_koponyeg']
-    print(providers_rmse5day_df)
 
+
+    print(merged_full['date'][5])
+    #start = len(merged_full['date'][5]-1:)
+    #print(start)
 
     #Draw 1st diagram
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_omsz']),
         '-',
         label='rmse5day_omsz',
+        linewidth=1.5,
         color='red')
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_idokep']),
         '-',
         label='rmse5day_idokep',
+        linewidth=1.5,
         color='blue')
     ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_koponyeg']),
         '-',
         label='rmse5day_koponyeg',
+        linewidth=1.5,
         color='grey')
     ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
 
@@ -214,20 +219,29 @@ def graph_met():
                     float(providers_rmse5day_df['rmse5day_koponyeg'].max()) ]
     ymax_diag1 = math.ceil(max(rmse_maxs))
 
-    if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 = ymin_diag1 - 1
-    if abs(ymax_diag1 - min(rmse_maxs)) < 0.2: ymax_diag1 = ymax_diag1 + 1
+    if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 -= 1
+    if abs(ymax_diag1 - max(rmse_maxs)) < 0.2: ymax_diag1 += 1
     ax1_left.set_ylim([ymin_diag1,ymax_diag1])
-    ax1_left.grid(True)
-    
+    plt.setp(ax1_left.get_xticklabels(), visible=True)
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)#, wspace=0.2, hspace=0)
 
-    #Draving Taylor-diagram
+    #for label in ax1_left.xaxis.get_ticklabels():
+        #label.set_rotation(45)
+
+    ax1_left.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
+    ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(6))
+
+    ax1_left.grid(True, linestyle='-', color='#abadab')
+    
+    #######################################################
+    ###################Taylor-diagram######################
     #Defining sample data (providers stdev, corr and name)
     samples = dict(alap=[[np.std(merged_full['omsz_tmin']+merged_full['omsz_tmax']),
-                            round(df_for_corr_omsz.corr()['OMSZ'][1], 4), "OMSZ", '^'],
+                            round(df_for_corr_omsz.corr()['OMSZ'][1], 4), "OMSZ", '^', '#e2380d'],
                          [np.std(merged_full['idokep_tmin'] + merged_full['idokep_tmax']),
-                            round(df_for_corr_idokep.corr()['Idokep'][1], 4), "Idokep", '.'],
+                            round(df_for_corr_idokep.corr()['Idokep'][1], 4), "Idokep", 'v', '#3752b2'],
                          [np.std(merged_full['koponyeg_tmin'] + merged_full['koponyeg_tmax']),
-                            round(df_for_corr_koponyeg.corr()['Koponyeg'][1], 4), "Koponyeg", 'o']])
+                            round(df_for_corr_koponyeg.corr()['Koponyeg'][1], 4), "Koponyeg", 'D', '#1fba27']])
 
     #Define plotting colors, cm is colormap, Set1 is the first cm set
     colors = plt.matplotlib.cm.Set1(np.linspace(0, 1, len(merged_full['ogimet_tmin'])))
@@ -254,7 +268,7 @@ def graph_met():
     y90 = [0.0, r_cir]
 
     #Plot correlation lines
-    dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Observation')
+    dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Stdev Obs.')
     corr_line_color = "c"
     dia.ax.plot(x10, y10, color=corr_line_color)
     dia.ax.plot(x20, y20, color=corr_line_color)
@@ -273,10 +287,11 @@ def graph_met():
 
 
     #Plot samples on the Taylor-Diagram
-    for i,(stddev,corrcoef,name, marker1) in enumerate(samples['alap']):
+    for i,(stddev,corrcoef,name, marker1, colors1) in enumerate(samples['alap']):
         dia.add_sample(stddev, corrcoef,
                        marker=marker1, ms=10, ls='', # marker='$%d$' % (i+1)
-                       mfc=colors[i], mec=colors[i], # Colors
+                       mfc=colors1, mec='black', # Colors
+                       #mfc=colors[i], mec=colors[i], # Colors
                        label=name)
 
 
@@ -287,100 +302,97 @@ def graph_met():
     #Legend settings
     fig.legend(dia.samplePoints,
                [p.get_label() for p in dia.samplePoints],
-                numpoints=1, bbox_to_anchor = (0.91, 0.91))
+                numpoints=1, bbox_to_anchor = (0.95, 0.95))
 
     #Draw 2nd diagram
-    ax2.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmin']), '-', label='ogimet_tmin')
+    ax2.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmin']), '-', label='ogimet_tmin', linewidth=1.5, color='black')
     ax2.scatter(list(merged_full['date']), list(merged_full['omsz_tmin']),
                 label='omsz_tmin',
-                marker=',',
-                s=50,
-                color='red')
+                marker='^',
+                edgecolor='black',
+                s=70,
+                color='#e2380d')
     ax2.scatter(list(merged_full['date']), list(merged_full['idokep_tmin']),
                 label='idokep_tmin',
-                marker='*',
+                marker='v',
+                edgecolor='black',
                 s=50,
-                color='blue')
+                color='#3752b2')
     ax2.scatter(list(merged_full['date']), list(merged_full['koponyeg_tmin']),
                 label='koponyeg_tmin',
-                marker='^',
+                marker='D',
                 s=50,
-                color='orange')
-    ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
-    ax2.grid(True)
+                edgecolor='black',
+                color='#1fba27')
+    ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
+    plt.setp(ax2.get_xticklabels(), visible=False)
+
+    #Searching for absolute Tmin/Tmax values, diag2
+    #Ymin
+    mins_diag2 = [ float(merged_full['ogimet_tmin'].min()),
+                    float(merged_full['omsz_tmin'].min()),
+                    float(merged_full['idokep_tmin'].min()),
+                    float(merged_full['koponyeg_tmin'].min()) ]
+    ymin_diag2 = math.floor(min(mins_diag2))
+    #Ymax
+    maxs_diag2 = [ float(merged_full['ogimet_tmin'].max()),
+                    float(merged_full['omsz_tmin'].max()),
+                    float(merged_full['idokep_tmin'].max()),
+                    float(merged_full['koponyeg_tmin'].max()) ]
+    ymax_diag2 = math.ceil(max(maxs_diag2))
+
+    if abs(ymin_diag2 - min(mins_diag2)) < 1: ymin_diag2 -= 1
+    if abs(ymax_diag2 - max(maxs_diag2)) < 1: ymax_diag2 += 1
+    ax2.set_ylim([ymin_diag2,ymax_diag2])
+
+    ax2.grid(True, linestyle='-', color='#abadab')
 
     #Draw 3rd diagram
-    ax3.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmax']), '-', color='red', label='ogimet_tmax')
+    ax3.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmax']), '-', label='ogimet_tmax', linewidth=1.5, color='black')
     ax3.scatter(list(merged_full['date']), list(merged_full['omsz_tmax']),
                 label='omsz_tmax',
-                marker=',',
-                s=50,
-                color='red')
+                marker='^',
+                edgecolor='black',
+                s=70,
+                color='#e2380d')
     ax3.scatter(list(merged_full['date']), list(merged_full['idokep_tmax']),
                 label='idokep_tmax',
-                marker='*',
+                marker='v',
+                edgecolor='black',
                 s=50,
-                color='blue')
+                color='#3752b2')
     ax3.scatter(list(merged_full['date']), list(merged_full['koponyeg_tmax']),
                 label='koponyeg_tmax',
-                marker='^',
+                marker='D',
                 s=50,
-                color='orange')
-    ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
-    ax3.grid(True)
+                edgecolor='black',
+                color='#1fba27')
+    ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
+    ax3.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
+
+    #Searching for absolute Tmin/Tmax values, diag3
+    #Ymin
+    mins_diag3 = [ float(merged_full['ogimet_tmax'].min()),
+                    float(merged_full['omsz_tmax'].min()),
+                    float(merged_full['idokep_tmax'].min()),
+                    float(merged_full['koponyeg_tmax'].min()) ]
+    ymin_diag3 = math.floor(min(mins_diag3))
+    #Ymax
+    maxs_diag3 = [ float(merged_full['ogimet_tmax'].max()),
+                    float(merged_full['omsz_tmax'].max()),
+                    float(merged_full['idokep_tmax'].max()),
+                    float(merged_full['koponyeg_tmax'].max()) ]
+    ymax_diag3 = math.ceil(max(maxs_diag3))
+
+    if abs(ymin_diag3 - min(mins_diag3)) < 1: ymin_diag3 -= 1
+    if abs(ymax_diag3 - max(maxs_diag3)) < 1: ymax_diag3 += 1
+    ax3.set_ylim([ymin_diag3,ymax_diag3])
+
+
+    ax3.grid(True, linestyle='-', color='#abadab')
 
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
     fig.savefig('/home/pi/Desktop/1.png', facecolor=fig.get_facecolor())
 
 graph_met()
-
-"""
-    ax1_left.plot_date(list(merged_full['date']), list(merged_full['omsz_tmin']), '-', label='omsz_tmin')
-    ax1_left.plot_date(list(merged_full['date']), list(merged_full['omsz_tmax']), '-', label='omsz_tmax')
-    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
-
-    ax2_left.plot_date(list(merged_full['date']), list(merged_full['idokep_tmin']), '-', label='idokep_tmin')
-    ax2_left.plot_date(list(merged_full['date']), list(merged_full['idokep_tmax']), '-', label='idokep_tmax')
-    ax2_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
-
-    ax3_left.plot_date(list(merged_full['date']), list(merged_full['koponyeg_tmin']), '-', label='koponyeg_tmin')
-    ax3_left.plot_date(list(merged_full['date']), list(merged_full['koponyeg_tmax']), '-', label='koponyeg_tmax')
-    ax3_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
-
-    ax1_right.bar(list(merged_full['date']),
-                        list(merged_full['omsz_tmin']-merged_full['ogimet_tmin']), label='omsz_ogimet_min')
-    #ax1_right.bar(list(merged_full['date']),
-    #                    list(merged_full['omsz_tmax']-merged_full['ogimet_tmax']), label='omsz_ogimet_max')
-
-    ax2_right.bar(list(merged_full['date']),
-                  list(merged_full['idokep_tmin'] - merged_full['ogimet_tmin']), label='idokep_ogimet_min')
-    #ax2_right.bar(list(merged_full['date']),
-    #              list(merged_full['idokep_tmax'] - merged_full['ogimet_tmax']), label='omsz_ogimet_max')
-
-    ax3_right.bar(list(merged_full['date']),
-                  list(merged_full['koponyeg_tmin'] - merged_full['ogimet_tmin']), label='koponyeg_ogimet_min')
-    #ax3_right.bar(list(merged_full['date']),
-    #              list(merged_full['koponyeg_tmax'] - merged_full['ogimet_tmax']), label='koponyeg_ogimet_max')
-
-    ax4.scatter(list(merged_full['date']), list(merged_full['ogimet_tmin']),
-                label='ogimet_data_tmin',
-                marker=',',
-                s=50,
-                color='blue')
-    ax4.scatter(list(merged_full['date']), list(merged_full['ogimet_tmax']),
-                label='ogimet_data_tmax',
-                marker='.',
-                s=100,
-                color='red')
-
-    ax4.plot_date(list(merged_full['date']),
-                  [np.mean(x) for x in zip(merged_full['ogimet_tmin'], merged_full['ogimet_tmax'])],
-                  '-',
-                  label='ogimet_avg',
-                  linewidth=2,
-                  color='green')
-    
-    fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
-    fig.savefig('/home/pi/Desktop/test.png', facecolor=fig.get_facecolor())
-"""
