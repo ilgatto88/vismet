@@ -10,6 +10,8 @@ import pandas as pd
 import numpy as np
 from taylorDiagram import TaylorDiagram
 import math
+from scipy.interpolate import interp1d
+from scipy.interpolate import pchip
 
 #General pyplot style can be used, but it makes problems with the Taylor-Diagram!
 #style.use('fivethirtyeight')
@@ -33,9 +35,9 @@ pd.set_option('display.width', desired_width)
 def graph_met():
 
     #Define costumization settings (0: label, 1: marker, 2: color, 3: linestyle, 4: figsize, 5: alpha)
-    cost_settings = dict(set1=[['OMSZ', '^', '#919191', '-', 100, 1.0],
-                                ['Idokep', 'v', '#215edf', '-', 100, 0.9],
-                                ['Koponyeg', 'D', '#ea9f11', '-', 100, 0.7]])
+    cost_settings = dict(set1=[['OMSZ', '^', '#919191', '-', 10, 1.0],
+                                ['Idokep', 'v', '#215edf', '-', 10, 0.9],
+                                ['Koponyeg', 'D', '#ea9f11', '-', 10, 0.7]])
 
     base_linewidth = 3
     grid_color = '#c2c4c2'
@@ -64,7 +66,7 @@ def graph_met():
     ax2.get_yaxis().tick_left()
     plt.ylabel('Tmin: Fcst vs. Obs')
 
-    ax3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, colspan=1, sharex=ax2)
+    ax3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, colspan=1)#, sharex=ax2)
     ax3.spines["top"].set_visible(False)
     ax3.spines["bottom"].set_visible(False)    
     ax3.spines["right"].set_visible(False)    
@@ -335,98 +337,129 @@ def graph_met():
                 numpoints=1, bbox_to_anchor = (0.95, 0.95))
 
     #Draw 2nd diagram
-    ax2.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmin']), '-', label='ogimet_tmin', linewidth=base_linewidth, color='black')
-    ax2.scatter(list(merged_full['date']), list(merged_full['omsz_tmin']),
-                label='omsz_tmin',
+    base_daterange = range(0, len(merged_full['date']))
+    ogimet_diag2_y = list(merged_full['ogimet_tmax'])[::-1]
+    omsz_diag2_y = list(merged_full['omsz_tmax'])[::-1]
+    idokep_diag2_y = list(merged_full['idokep_tmax'])[::-1]
+    koponyeg_diag2_y = list(merged_full['koponyeg_tmax'])[::-1]
+    interp_daterange = np.linspace(0, len(merged_full['date']), len(merged_full['date'])*10)
+
+    interp = pchip(base_daterange, ogimet_diag2_y)
+    
+    ax2.plot(interp_daterange[:-10], interp(interp_daterange)[:-10], '-', label='ogimet_tmax', linewidth=base_linewidth, color='black')
+    
+    ax2.plot(base_daterange, omsz_diag2_y, ' ',
+                label='omsz_tmax',
                 marker=cost_settings['set1'][0][1],
-                edgecolor='black',
-                s=cost_settings['set1'][0][4],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][0][5],
                 color=cost_settings['set1'][0][2])
-    ax2.scatter(list(merged_full['date']), list(merged_full['idokep_tmin']),
-                label='idokep_tmin',
+
+    ax2.plot(base_daterange, idokep_diag2_y, ' ',
+                label='idokep_tmax',
                 marker=cost_settings['set1'][1][1],
-                edgecolor='black',
-                s=cost_settings['set1'][0][4],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][1][5],
                 color=cost_settings['set1'][1][2])
-    ax2.scatter(list(merged_full['date']), list(merged_full['koponyeg_tmin']),
-                label='koponyeg_tmin',
+
+    ax2.plot(base_daterange, koponyeg_diag2_y, ' ',
+                label='koponyeg_tmax',
                 marker=cost_settings['set1'][2][1],
-                edgecolor='black',
-                s=cost_settings['set1'][0][4],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][2][5],
                 color=cost_settings['set1'][2][2])
-    ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
-    plt.setp(ax2.get_xticklabels(), visible=False)
 
-    #Searching for absolute Tmin/Tmax values, diag2
+    ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
+    ax2.set_xticklabels(list(merged_full['date'])[::-2])
+    #ax2.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
+
+    
+    #Searching for absolute Tmin/Tmax values, diag3
     #Ymin
-    mins_diag2 = [ float(merged_full['ogimet_tmin'].min()),
-                    float(merged_full['omsz_tmin'].min()),
-                    float(merged_full['idokep_tmin'].min()),
-                    float(merged_full['koponyeg_tmin'].min()) ]
+    mins_diag2 = [ float(merged_full['ogimet_tmax'].min()),
+                    float(merged_full['omsz_tmax'].min()),
+                    float(merged_full['idokep_tmax'].min()),
+                    float(merged_full['koponyeg_tmax'].min()) ]
     ymin_diag2 = math.floor(min(mins_diag2))
     #Ymax
-    maxs_diag2 = [ float(merged_full['ogimet_tmin'].max()),
-                    float(merged_full['omsz_tmin'].max()),
-                    float(merged_full['idokep_tmin'].max()),
-                    float(merged_full['koponyeg_tmin'].max()) ]
+    maxs_diag2 = [ float(merged_full['ogimet_tmax'].max()),
+                    float(merged_full['omsz_tmax'].max()),
+                    float(merged_full['idokep_tmax'].max()),
+                    float(merged_full['koponyeg_tmax'].max()) ]
     ymax_diag2 = math.ceil(max(maxs_diag2))
-
+    
     if abs(ymin_diag2 - min(mins_diag2)) < 1: ymin_diag2 -= 1
     if abs(ymax_diag2 - max(maxs_diag2)) < 1: ymax_diag2 += 1
     ax2.set_ylim([ymin_diag2,ymax_diag2])
 
     ax2.grid(True, linestyle=grid_linestyle, color=grid_color)
 
-
     #Draw 3rd diagram
-    ax3.plot_date(list(merged_full['date']), list(merged_full['ogimet_tmax']), '-', label='ogimet_tmax', linewidth=base_linewidth, color='black')
-    ax3.scatter(list(merged_full['date']), list(merged_full['omsz_tmax']),
-                label='omsz_tmax',
+
+    #base_daterange = range(0, len(merged_full['date']))
+    ogimet_diag3_y = list(merged_full['ogimet_tmin'])[::-1]
+    ogimet_diag3_y = list(merged_full['ogimet_tmin'])[::-1]
+    omsz_diag3_y = list(merged_full['omsz_tmin'])[::-1]
+    idokep_diag3_y = list(merged_full['idokep_tmin'])[::-1]
+    koponyeg_diag3_y = list(merged_full['koponyeg_tmin'])[::-1]
+    #interp_daterange = np.linspace(0, len(merged_full['date']), len(merged_full['date'])*10)
+
+    interp = pchip(base_daterange, ogimet_diag3_y)
+    
+    ax3.plot(interp_daterange[:-10], interp(interp_daterange)[:-10], '-', label='ogimet_tmin', linewidth=base_linewidth, color='black')
+    
+    ax3.plot(base_daterange, omsz_diag3_y, ' ',
+                label='omsz_tmin',
                 marker=cost_settings['set1'][0][1],
-                edgecolor='black',
-                s=cost_settings['set1'][0][4],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][0][5],
                 color=cost_settings['set1'][0][2])
-    ax3.scatter(list(merged_full['date']), list(merged_full['idokep_tmax']),
-                label='idokep_tmax',
+
+    ax3.plot(base_daterange, idokep_diag3_y, ' ',
+                label='idokep_tmin',
                 marker=cost_settings['set1'][1][1],
-                edgecolor='black',
-                s=cost_settings['set1'][0][4],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][1][5],
                 color=cost_settings['set1'][1][2])
-    ax3.scatter(list(merged_full['date']), list(merged_full['koponyeg_tmax']),
-                label='koponyeg_tmax',
+
+    ax3.plot(base_daterange, koponyeg_diag3_y, ' ',
+                label='koponyeg_tmin',
                 marker=cost_settings['set1'][2][1],
-                edgecolor='black',
-                s=cost_settings['set1'][0][4],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][2][5],
                 color=cost_settings['set1'][2][2])
-    ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
-    ax3.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
 
-    #Searching for absolute Tmin/Tmax values, diag3
+    ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
+    ax3.set_xticklabels(list(merged_full['date'])[::-2])
+    #ax3.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
+
+    
+    #Searching for absolute Tmin/tmax values, diag3
     #Ymin
-    mins_diag3 = [ float(merged_full['ogimet_tmax'].min()),
-                    float(merged_full['omsz_tmax'].min()),
-                    float(merged_full['idokep_tmax'].min()),
-                    float(merged_full['koponyeg_tmax'].min()) ]
+    mins_diag3 = [ float(merged_full['ogimet_tmin'].min()),
+                    float(merged_full['omsz_tmin'].min()),
+                    float(merged_full['idokep_tmin'].min()),
+                    float(merged_full['koponyeg_tmin'].min()) ]
     ymin_diag3 = math.floor(min(mins_diag3))
     #Ymax
-    maxs_diag3 = [ float(merged_full['ogimet_tmax'].max()),
-                    float(merged_full['omsz_tmax'].max()),
-                    float(merged_full['idokep_tmax'].max()),
-                    float(merged_full['koponyeg_tmax'].max()) ]
+    maxs_diag3 = [ float(merged_full['ogimet_tmin'].max()),
+                    float(merged_full['omsz_tmin'].max()),
+                    float(merged_full['idokep_tmin'].max()),
+                    float(merged_full['koponyeg_tmin'].max()) ]
     ymax_diag3 = math.ceil(max(maxs_diag3))
-
+    
     if abs(ymin_diag3 - min(mins_diag3)) < 1: ymin_diag3 -= 1
     if abs(ymax_diag3 - max(maxs_diag3)) < 1: ymax_diag3 += 1
     ax3.set_ylim([ymin_diag3,ymax_diag3])
 
-
     ax3.grid(True, linestyle=grid_linestyle, color=grid_color)
+    
 
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
