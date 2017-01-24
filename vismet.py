@@ -27,7 +27,7 @@ plt.rcParams['xtick.labelsize'] = 8
 plt.rcParams['ytick.labelsize'] = 8
 plt.rcParams['legend.fontsize'] = 10
 """
-desired_width = 320
+desired_width = 640
 pd.set_option('display.width', desired_width)
 
 
@@ -101,23 +101,23 @@ def graph_met():
     cur = conn.cursor()
 
     # Fetching provider data
-    sql_get_omsz = "SELECT fcst_date, fcst_tmin_for_day1, fcst_tmax_for_day1 FROM omsz_table ORDER BY timeofrequest DESC LIMIT 20;"
+    sql_get_omsz = "SELECT fcst_date, fcst_tmin_for_day1, fcst_tmax_for_day1 FROM omsz_table ORDER BY timeofrequest ASC LIMIT 20;" #ORDER BY timeofrequest ASC
     cur.execute(sql_get_omsz)
     omsz_fetched = pd.DataFrame(cur.fetchall(), columns=['date', 'omsz_tmin', 'omsz_tmax'], dtype=int)
 
-    sql_get_idokep = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 FROM idokep_table ORDER BY timeofrequest DESC LIMIT 20;"
+    sql_get_idokep = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 FROM idokep_table ORDER BY timeofrequest ASC LIMIT 20;"
     cur.execute(sql_get_idokep)
     idokep_fetched = pd.DataFrame(cur.fetchall(), columns=['idokep_tmin', 'idokep_tmax'])
 
-    sql_get_koponyeg = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 FROM koponyeg_table ORDER BY timeofrequest DESC LIMIT 20;"
+    sql_get_koponyeg = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 FROM koponyeg_table ORDER BY timeofrequest ASC LIMIT 20;"
     cur.execute(sql_get_koponyeg)
     koponyeg_fetched = pd.DataFrame(cur.fetchall(), columns=['koponyeg_tmin', 'koponyeg_tmax'])
 
-    sql_get_ogimet_tmin = "SELECT Tmin_date, Obs_Tmin FROM ogimet_table ORDER BY timeofrequest DESC LIMIT 20;"
+    sql_get_ogimet_tmin = "SELECT Tmin_date, Obs_Tmin FROM ogimet_table ORDER BY timeofrequest ASC LIMIT 20;"
     cur.execute(sql_get_ogimet_tmin)
     ogimet_fetched_uncorrected_tmin = pd.DataFrame(cur.fetchall(), columns=['date', 'ogimet_tmin'])
 
-    sql_get_ogimet_tmax = "SELECT Tmax_date, Obs_Tmax FROM ogimet_table ORDER BY timeofrequest DESC LIMIT 20;"
+    sql_get_ogimet_tmax = "SELECT Tmax_date, Obs_Tmax FROM ogimet_table ORDER BY timeofrequest ASC LIMIT 20;"
     cur.execute(sql_get_ogimet_tmax)
     ogimet_fetched_uncorrected_tmax = pd.DataFrame(cur.fetchall(), columns=['date', 'ogimet_tmax'])
 
@@ -220,25 +220,77 @@ def graph_met():
     providers_rmse5day_df = providers_rmse5day_df_omsz_idokep.merge(koponyeg_rmse5day_df, how='inner', on='date')
     providers_rmse5day_df.columns = ['date', 'rmse5day_omsz', 'rmse5day_idokep', 'rmse5day_koponyeg']
 
+    print(providers_rmse5day_df)
 
     #Draw 1st diagram
-    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_omsz']),
-        cost_settings['set1'][0][3],
+    base_daterange = range(0, len(providers_rmse5day_df['date']))
+    omsz_rmse_y = list(providers_rmse5day_df['rmse5day_omsz'])[::-1]
+    idokep_rmse_y = list(providers_rmse5day_df['rmse5day_idokep'])[::-1]
+    koponyeg_rmse_y = list(providers_rmse5day_df['rmse5day_koponyeg'])[::-1]
+    interp_daterange = np.linspace(0, len(providers_rmse5day_df['date']), len(providers_rmse5day_df['date'])*10)
+
+    interp_omsz = pchip(base_daterange, omsz_rmse_y)
+    interp_idokep = pchip(base_daterange, idokep_rmse_y)
+    interp_koponyeg = pchip(base_daterange, koponyeg_rmse_y)
+
+    print(providers_rmse5day_df['date'])
+    print(providers_rmse5day_df['rmse5day_omsz'])
+
+
+    
+    ax1_left.plot(interp_daterange[:-10], interp_omsz(interp_daterange)[:-10], cost_settings['set1'][0][3],
         label='rmse5day_omsz',
         linewidth=base_linewidth,
         color=cost_settings['set1'][0][2])
-    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_idokep']),
+
+    print(interp_daterange[:-10])
+    print(interp_omsz(interp_daterange)[:-10])
+
+    ax1_left.plot(base_daterange, omsz_rmse_y, ' ',
+                label='rmse5day_omsz_dots',
+                marker=cost_settings['set1'][0][1],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][0][5],
+                color=cost_settings['set1'][0][2])
+
+    ax1_left.plot(interp_daterange[:-10], interp_idokep(interp_daterange)[:-10],
         cost_settings['set1'][1][3],
         label='rmse5day_idokep',
         linewidth=base_linewidth,
         color=cost_settings['set1'][1][2])
-    ax1_left.plot_date(list(providers_rmse5day_df['date']), list(providers_rmse5day_df['rmse5day_koponyeg']),
+
+    ax1_left.plot(base_daterange, idokep_rmse_y, ' ',
+                label='idokep_tmax',
+                marker=cost_settings['set1'][1][1],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][1][5],
+                color=cost_settings['set1'][1][2])
+
+    ax1_left.plot(interp_daterange[:-10], interp_koponyeg(interp_daterange)[:-10],
         cost_settings['set1'][2][3],
         label='rmse5day_koponyeg',
         linewidth=base_linewidth,
         color=cost_settings['set1'][2][2])
-    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
+
+    ax1_left.plot(base_daterange, koponyeg_rmse_y, ' ',
+                label='koponyeg_tmax',
+                marker=cost_settings['set1'][2][1],
+                mec='black',
+                ms=cost_settings['set1'][0][4],
+                alpha=cost_settings['set1'][2][5],
+                color=cost_settings['set1'][2][2])
     
+    ax1_left.set_xticklabels(list(providers_rmse5day_df['date'])[::-2])
+    #ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(20))
+    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
+    """
+    ax1_left.text(.9,.9,'centered title',
+        horizontalalignment='center',
+        transform=ax1_left.transAxes)
+    """
+
     #Searching for absolute Tmin/Tmax values
     #Ymin
     rmse_mins = [ float(providers_rmse5day_df['rmse5day_omsz'].min()),
@@ -254,16 +306,14 @@ def graph_met():
     if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 -= 1
     if abs(ymax_diag1 - max(rmse_maxs)) < 0.2: ymax_diag1 += 1
     ax1_left.set_ylim([ymin_diag1,ymax_diag1])
-    plt.setp(ax1_left.get_xticklabels(), visible=True)
+    #plt.setp(ax1_left.get_xticklabels(), visible=True)
 
-    #for label in ax1_left.xaxis.get_ticklabels():
-        #label.set_rotation(45)
-
-    ax1_left.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
-    ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(6))
+    #ax1_left.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
+    #ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(6))
 
     ax1_left.grid(True, linestyle=grid_linestyle, color=grid_color)
-    
+
+
     #######################################################
     ###################Taylor-diagram######################
     #Defining sample data (providers stdev, corr and name)
@@ -337,18 +387,18 @@ def graph_met():
                 numpoints=1, bbox_to_anchor = (0.95, 0.95))
 
     #Draw 2nd diagram
-    base_daterange = range(0, len(merged_full['date']))
+    base_daterange_diag2 = range(0, len(merged_full['date']))
     ogimet_diag2_y = list(merged_full['ogimet_tmax'])[::-1]
     omsz_diag2_y = list(merged_full['omsz_tmax'])[::-1]
     idokep_diag2_y = list(merged_full['idokep_tmax'])[::-1]
     koponyeg_diag2_y = list(merged_full['koponyeg_tmax'])[::-1]
-    interp_daterange = np.linspace(0, len(merged_full['date']), len(merged_full['date'])*10)
+    interp_daterange_diag2 = np.linspace(0, len(merged_full['date']), len(merged_full['date'])*10)
 
-    interp = pchip(base_daterange, ogimet_diag2_y)
+    interp = pchip(base_daterange_diag2, ogimet_diag2_y)
     
-    ax2.plot(interp_daterange[:-10], interp(interp_daterange)[:-10], '-', label='ogimet_tmax', linewidth=base_linewidth, color='black')
+    ax2.plot(interp_daterange_diag2[:-10], interp(interp_daterange_diag2)[:-10], '-', label='ogimet_tmax', linewidth=base_linewidth, color='black')
     
-    ax2.plot(base_daterange, omsz_diag2_y, ' ',
+    ax2.plot(base_daterange_diag2, omsz_diag2_y, ' ',
                 label='omsz_tmax',
                 marker=cost_settings['set1'][0][1],
                 mec='black',
@@ -356,7 +406,7 @@ def graph_met():
                 alpha=cost_settings['set1'][0][5],
                 color=cost_settings['set1'][0][2])
 
-    ax2.plot(base_daterange, idokep_diag2_y, ' ',
+    ax2.plot(base_daterange_diag2, idokep_diag2_y, ' ',
                 label='idokep_tmax',
                 marker=cost_settings['set1'][1][1],
                 mec='black',
@@ -364,7 +414,7 @@ def graph_met():
                 alpha=cost_settings['set1'][1][5],
                 color=cost_settings['set1'][1][2])
 
-    ax2.plot(base_daterange, koponyeg_diag2_y, ' ',
+    ax2.plot(base_daterange_diag2, koponyeg_diag2_y, ' ',
                 label='koponyeg_tmax',
                 marker=cost_settings['set1'][2][1],
                 mec='black',
@@ -373,7 +423,8 @@ def graph_met():
                 color=cost_settings['set1'][2][2])
 
     ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
-    ax2.set_xticklabels(list(merged_full['date'])[::-2])
+    plt.setp(ax2.get_xticklabels(), visible=False)
+    #ax2.set_xticklabels(list(merged_full['date'])[::-2])
     #ax2.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
 
     
@@ -399,19 +450,19 @@ def graph_met():
 
     #Draw 3rd diagram
 
-    #base_daterange = range(0, len(merged_full['date']))
+    base_daterange_diag3 = range(0, len(merged_full['date']))
     ogimet_diag3_y = list(merged_full['ogimet_tmin'])[::-1]
     ogimet_diag3_y = list(merged_full['ogimet_tmin'])[::-1]
     omsz_diag3_y = list(merged_full['omsz_tmin'])[::-1]
     idokep_diag3_y = list(merged_full['idokep_tmin'])[::-1]
     koponyeg_diag3_y = list(merged_full['koponyeg_tmin'])[::-1]
-    #interp_daterange = np.linspace(0, len(merged_full['date']), len(merged_full['date'])*10)
+    interp_daterange_diag3 = np.linspace(0, len(merged_full['date']), len(merged_full['date'])*10)
 
-    interp = pchip(base_daterange, ogimet_diag3_y)
+    interp = pchip(base_daterange_diag3, ogimet_diag3_y)
     
-    ax3.plot(interp_daterange[:-10], interp(interp_daterange)[:-10], '-', label='ogimet_tmin', linewidth=base_linewidth, color='black')
+    ax3.plot(interp_daterange_diag3[:-10], interp(interp_daterange_diag3)[:-10], '-', label='ogimet_tmin', linewidth=base_linewidth, color='black')
     
-    ax3.plot(base_daterange, omsz_diag3_y, ' ',
+    ax3.plot(base_daterange_diag3, omsz_diag3_y, ' ',
                 label='omsz_tmin',
                 marker=cost_settings['set1'][0][1],
                 mec='black',
@@ -419,7 +470,7 @@ def graph_met():
                 alpha=cost_settings['set1'][0][5],
                 color=cost_settings['set1'][0][2])
 
-    ax3.plot(base_daterange, idokep_diag3_y, ' ',
+    ax3.plot(base_daterange_diag3, idokep_diag3_y, ' ',
                 label='idokep_tmin',
                 marker=cost_settings['set1'][1][1],
                 mec='black',
@@ -427,7 +478,7 @@ def graph_met():
                 alpha=cost_settings['set1'][1][5],
                 color=cost_settings['set1'][1][2])
 
-    ax3.plot(base_daterange, koponyeg_diag3_y, ' ',
+    ax3.plot(base_daterange_diag3, koponyeg_diag3_y, ' ',
                 label='koponyeg_tmin',
                 marker=cost_settings['set1'][2][1],
                 mec='black',
