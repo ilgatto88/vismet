@@ -49,7 +49,6 @@ def graph_met():
     ax1_left.spines["left"].set_visible(False)
     ax1_left.get_xaxis().tick_bottom()    
     ax1_left.get_yaxis().tick_left()
-    #plt.title('Minimum & Maximum Temperature Forecast Verification: OMSZ vs. Időkép vs. Köpönyeg')
     plt.ylabel('5-day moving Tmin&Tmax Avg RMSE')
 
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1, colspan=1)
@@ -358,6 +357,8 @@ def graph_met():
 
     #Plot correlation lines
     dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Observation')
+    dia.ax.set_position([0.85, 0.27, 0.9, 0.5])
+
     corr_line_color = "c"
     dia.ax.plot(x10, y10, color=corr_line_color)
     dia.ax.plot(x20, y20, color=corr_line_color)
@@ -390,8 +391,10 @@ def graph_met():
     fig.legend(dia.samplePoints,
                [p.get_label() for p in dia.samplePoints],
                 numpoints=1, bbox_to_anchor = (0.95, 0.95))
-    
-    #Draw 2nd diagram
+                
+    ############################
+    ######Draw 2nd diagram######
+    ############################
     base_daterange_diag2 = range(0, len(merged_full['date']))
     ogimet_diag2_y = list(merged_full['ogimet_tmax'])
     omsz_diag2_y = list(merged_full['omsz_tmax'])
@@ -433,8 +436,7 @@ def graph_met():
     ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=4, prune='lower'))
     ax2.yaxis.set_label_coords(-0.03, 0.5)
     plt.setp(ax2.get_xticklabels(), visible=False)
-    #ax2.set_xticklabels(list(merged_full['date'])[::1])
-    #ax2.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
+
 
     
     #Searching for absolute Tmin/Tmax values, diag3
@@ -461,6 +463,7 @@ def graph_met():
                     top='off',         # ticks along the top edge are off
                     labelbottom='on') # labels along the bottom edge are on
 
+    ax2.set_position([0.05, 0.27, 0.9, 0.16])
     ax2.grid(True, linestyle=grid_linestyle, color=grid_color)
     
     #Draw 3rd diagram
@@ -548,7 +551,7 @@ def graph_met():
     imagebox.image.axes = ax3
 
     ax3.add_artist(AnnotationBbox(imagebox, [10.0, 0.0],
-                                xybox=(670., -140.),
+                                xybox=(670., -110.),
                                 pad=0,
                                 frameon=False,
                                 boxcoords="offset points"))
@@ -556,6 +559,7 @@ def graph_met():
     ax3.annotate(str(now_time)+' @ János Tordai', xy=(0.9, -0.06), xytext=(12, -12), va='top',
              xycoords='axes fraction', textcoords='offset points', alpha=0.3, color='black')
     
+    ax3.set_position([0.05, 0.05, 0.9, 0.16])
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
     fig.savefig('/home/pi/Desktop/1.png', facecolor='white')#fig.get_facecolor())
