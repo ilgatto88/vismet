@@ -12,24 +12,15 @@ from taylorDiagram import TaylorDiagram
 import math
 from scipy.interpolate import interp1d
 from scipy.interpolate import pchip
+from matplotlib.offsetbox import (TextArea, OffsetImage, AnchoredOffsetbox,
+                                  AnnotationBbox)
+from matplotlib.cbook import get_sample_data
 
 #General pyplot style can be used, but it makes problems with the Taylor-Diagram!
 #style.use('fivethirtyeight')
-"""
-plt.rcParams['font.serif'] = 'Ubuntu'
-plt.rcParams['font.monospace'] = 'Ubuntu Mono'
-plt.rcParams['font.size'] = 15
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['axes.labelweight'] = 'bold'
-plt.rcParams['lines.linewidth'] = 2
-plt.rcParams['axes.titlesize'] = 10
-plt.rcParams['xtick.labelsize'] = 8
-plt.rcParams['ytick.labelsize'] = 8
-plt.rcParams['legend.fontsize'] = 10
-"""
+
 desired_width = 640
 pd.set_option('display.width', desired_width)
-
 
 #Start of the graphing function
 def graph_met():
@@ -37,7 +28,7 @@ def graph_met():
     #Define costumization settings (0: label, 1: marker, 2: color, 3: linestyle, 4: figsize, 5: alpha)
     cost_settings = dict(set1=[['OMSZ', '^', '#919191', '-', 10, 1.0],
                                 ['Idokep', 'v', '#215edf', '-', 10, 0.9],
-                                ['Koponyeg', 'D', '#ea9f11', '-', 10, 0.7]])
+                                ['Koponyeg', 'o', '#ea9f11', '-', 10, 0.7]])
 
     base_linewidth = 3
     grid_color = '#c2c4c2'
@@ -54,7 +45,7 @@ def graph_met():
     ax1_left.spines["left"].set_visible(False)
     ax1_left.get_xaxis().tick_bottom()    
     ax1_left.get_yaxis().tick_left()
-    plt.title('Minimum & Maximum Temperature Forecast Verification: OMSZ vs. Időkép vs. Köpönyeg')
+    #plt.title('Minimum & Maximum Temperature Forecast Verification: OMSZ vs. Időkép vs. Köpönyeg')
     plt.ylabel('5-day moving Tmin&Tmax Avg RMSE')
 
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1, colspan=1)
@@ -64,7 +55,7 @@ def graph_met():
     ax2.spines["left"].set_visible(False)
     ax2.get_xaxis().tick_bottom()    
     ax2.get_yaxis().tick_left()
-    plt.ylabel('Tmin: Fcst vs. Obs')
+    plt.ylabel('Tmin: Fcst vs. Obs [°C]')
 
     ax3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, colspan=1, sharex=ax2)
     ax3.spines["top"].set_visible(False)
@@ -73,7 +64,7 @@ def graph_met():
     ax3.spines["left"].set_visible(False)
     ax3.get_xaxis().tick_bottom()    
     ax3.get_yaxis().tick_left()
-    plt.ylabel('Tmax: Fcst vs. Obs')
+    plt.ylabel('Tmax: Fcst vs. Obs [°C]')
 	
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)#, wspace=0.2, hspace=0)
 
@@ -133,6 +124,7 @@ def graph_met():
     #Replacing nan to NA (string)
     #merged_full_NArepl_reverse = merged_full.replace(pd.np.nan, 'NA')
     merged_full_NArepl = merged_full.replace(pd.np.nan, 'NA')
+
     
     #Calculating data for the Taylor Diagram
     #Calculating standard deviation of the observation
@@ -168,7 +160,7 @@ def graph_met():
         rmse_omsz_tmin = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_omsz_tmin))/5.0)
         rmse_omsz_tmax = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_omsz_tmax))/5.0)
         rmse_omsz_min_max = round((rmse_omsz_tmin + rmse_omsz_tmax) / 2.0, 2)
-        list4rmse_omsz.append([merged_full_NArepl['date'][i], rmse_omsz_min_max])
+        list4rmse_omsz.append([merged_full_NArepl['date'][i].strftime("%B %d"), rmse_omsz_min_max])
 
     omsz_rmse5day_df = pd.DataFrame.from_records(list4rmse_omsz, columns=['date', 'rmse5day_omsz'])
 
@@ -192,7 +184,7 @@ def graph_met():
         rmse_idokep_tmin = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_idokep_tmin))/5.0)
         rmse_idokep_tmax = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_idokep_tmax))/5.0)
         rmse_idokep_min_max = round((rmse_idokep_tmin + rmse_idokep_tmax) / 2.0, 2)
-        list4rmse_idokep.append([merged_full_NArepl['date'][i], rmse_idokep_min_max])
+        list4rmse_idokep.append([merged_full_NArepl['date'][i].strftime("%B %d"), rmse_idokep_min_max])
 
     idokep_rmse5day_df = pd.DataFrame.from_records(list4rmse_idokep, columns=['date', 'rmse5day_idokep'])
 
@@ -216,7 +208,7 @@ def graph_met():
         rmse_koponyeg_tmin = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_koponyeg_tmin))/5.0)
         rmse_koponyeg_tmax = math.sqrt(sum(filter(lambda i: isinstance(i, float), l1_koponyeg_tmax))/5.0)
         rmse_koponyeg_min_max = round((rmse_koponyeg_tmin + rmse_koponyeg_tmax) / 2.0, 2)
-        list4rmse_koponyeg.append([merged_full_NArepl['date'][i], rmse_koponyeg_min_max])
+        list4rmse_koponyeg.append([merged_full_NArepl['date'][i].strftime("%B %d"), rmse_koponyeg_min_max])
 
     koponyeg_rmse5day_df = pd.DataFrame.from_records(list4rmse_koponyeg, columns=['date', 'rmse5day_koponyeg'])
 
@@ -252,7 +244,8 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][0][5],
-                color=cost_settings['set1'][0][2])
+                color=cost_settings['set1'][0][2],
+                clip_on = False)
 
     ax1_left.plot(interp_daterange[:-10], interp_idokep(interp_daterange)[:-10],
         cost_settings['set1'][1][3],
@@ -266,7 +259,8 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][1][5],
-                color=cost_settings['set1'][1][2])
+                color=cost_settings['set1'][1][2],
+                clip_on = False)
 
     ax1_left.plot(interp_daterange[:-10], interp_koponyeg(interp_daterange)[:-10],
         cost_settings['set1'][2][3],
@@ -280,11 +274,13 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][2][5],
-                color=cost_settings['set1'][2][2])
+                color=cost_settings['set1'][2][2],
+                clip_on = False)
     
-    ax1_left.set_xticklabels(list(providers_rmse5day_df['date'])[::2])
-    #ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(20))
+    ax1_left.set_xticklabels(list(providers_rmse5day_df['date'])[::4])
+    ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
     ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='both'))
+    
     """
     ax1_left.text(.9,.9,'centered title',
         horizontalalignment='center',
@@ -350,7 +346,7 @@ def graph_met():
     y90 = [0.0, r_cir]
 
     #Plot correlation lines
-    dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Stdev Obs.')
+    dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Observation')
     corr_line_color = "c"
     dia.ax.plot(x10, y10, color=corr_line_color)
     dia.ax.plot(x20, y20, color=corr_line_color)
@@ -362,11 +358,9 @@ def graph_met():
     dia.ax.plot(x80, y80, color=corr_line_color)
     dia.ax.plot(x90, y90, color=corr_line_color)
 
-
     #markers = dict([('*', 0),(',', 1),('.', 2)])
     #for i in markers.keys():
         #print(i)
-
 
     #Plot samples on the Taylor-Diagram
     for i,(stddev,corrcoef,name, marker1, colors1) in enumerate(samples['alap']):
@@ -404,7 +398,8 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][0][5],
-                color=cost_settings['set1'][0][2])
+                color=cost_settings['set1'][0][2],
+                clip_on = False)
 
     ax2.plot(base_daterange_diag2, idokep_diag2_y, ' ',
                 label='idokep_tmax',
@@ -412,7 +407,8 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][1][5],
-                color=cost_settings['set1'][1][2])
+                color=cost_settings['set1'][1][2],
+                clip_on = False)
 
     ax2.plot(base_daterange_diag2, koponyeg_diag2_y, ' ',
                 label='koponyeg_tmax',
@@ -420,7 +416,8 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][2][5],
-                color=cost_settings['set1'][2][2])
+                color=cost_settings['set1'][2][2],
+                clip_on = False)
 
     ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=4, prune='lower'))
     plt.setp(ax2.get_xticklabels(), visible=False)
@@ -466,7 +463,8 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][0][5],
-                color=cost_settings['set1'][0][2])
+                color=cost_settings['set1'][0][2],
+                clip_on = False)
 
     ax3.plot(base_daterange_diag3, idokep_diag3_y, ' ',
                 label='idokep_tmin',
@@ -474,7 +472,8 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][1][5],
-                color=cost_settings['set1'][1][2])
+                color=cost_settings['set1'][1][2],
+                clip_on = False)
 
     ax3.plot(base_daterange_diag3, koponyeg_diag3_y, ' ',
                 label='koponyeg_tmin',
@@ -482,11 +481,17 @@ def graph_met():
                 mec='black',
                 ms=cost_settings['set1'][0][4],
                 alpha=cost_settings['set1'][2][5],
-                color=cost_settings['set1'][2][2])
+                color=cost_settings['set1'][2][2],
+                clip_on = False)
 
     ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=4, prune='upper'))
     ax3.xaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
-    ax3.set_xticklabels(list(merged_full['date'])[::4])
+    list_newDateFormat = []
+    for i in range(len(merged_full['date'])):
+        list_newDateFormat.append(merged_full['date'][i].strftime("%B %d"))
+
+
+    ax3.set_xticklabels(list_newDateFormat[::-4])
     #ax3.set_xticklabels(list(providers_rmse5day_df['date'])[::2])
     #ax3.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
 
@@ -509,8 +514,19 @@ def graph_met():
     if abs(ymax_diag3 - max(maxs_diag3)) < 1: ymax_diag3 += 1
     ax3.set_ylim([ymin_diag3,ymax_diag3])
     ax3.grid(True, linestyle=grid_linestyle, color=grid_color)
-    
 
+    #Adding Python logo to the lower right corner
+    python_logo = get_sample_data('/home/pi/learning_python/vismet/python.png', asfileobj=False)
+    arr_img = plt.imread(python_logo, format='png')
+    imagebox = OffsetImage(arr_img, zoom=0.50, alpha=0.25)
+    imagebox.image.axes = ax3
+
+    ax3.add_artist(AnnotationBbox(imagebox, [10.0, 0.0],
+                                xybox=(670., -140.),
+                                pad=0,
+                                frameon=False,
+                                boxcoords="offset points"))
+    
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
     fig.savefig('/home/pi/Desktop/1.png', facecolor='white')#fig.get_facecolor())
