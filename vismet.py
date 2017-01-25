@@ -314,9 +314,54 @@ def graph_met():
     if abs(ymax_diag1 - max(rmse_maxs)) < 0.2: ymax_diag1 += 1
     ax1_left.set_ylim([ymin_diag1,ymax_diag1])
 
-    ax1_left.annotate('Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg vs. Observation', xy=(0.3, 1.12), xytext=(12, -12), va='top',
-             xycoords='axes fraction', textcoords='offset points', color='black', fontsize=15, fontweight='bold')
+    #ax1_left.annotate('Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg vs. Observation', xy=(0.3, 1.12), xytext=(12, -12), va='top',
+             #xycoords='axes fraction', textcoords='offset points', color='black', fontsize=15, fontweight='bold')
+    
+    bbox_props = dict(boxstyle='round', fc='w', ec='black')
+    
+    omsz_ydiff = 0
+    idokep_ydiff = 0
+    koponyeg_ydiff = 0
 
+    omsz_rmse_lastval =  providers_rmse5day_df['rmse5day_omsz'][len(providers_rmse5day_df['rmse5day_omsz'])-1]
+    idokep_rmse_lastval =  providers_rmse5day_df['rmse5day_idokep'][len(providers_rmse5day_df['rmse5day_idokep'])-1]
+    koponyeg_rmse_lastval =  providers_rmse5day_df['rmse5day_koponyeg'][len(providers_rmse5day_df['rmse5day_koponyeg'])-1]
+
+    print(omsz_rmse_lastval)
+    print(idokep_rmse_lastval)
+    print(koponyeg_rmse_lastval)
+
+    if omsz_rmse_lastval > idokep_rmse_lastval and omsz_rmse_lastval > koponyeg_rmse_lastval:
+        omsz_ydiff += 0.2
+        if idokep_rmse_lastval > koponyeg_rmse_lastval:
+            koponyeg_ydiff -= 0.2
+    if  idokep_rmse_lastval > omsz_rmse_lastval and idokep_rmse_lastval > koponyeg_rmse_lastval:
+        idokep_ydiff += 0.2
+    if koponyeg_rmse_lastval > omsz_rmse_lastval and koponyeg_rmse_lastval > idokep_rmse_lastval:
+        koponyeg_rmse_lastval += 0.2
+
+    ax1_left.annotate('\u25b2' + ': ' + str(round(omsz_rmse_lastval, 2)),  # Value of annotation
+                        (16.0, omsz_rmse_lastval),
+                        bbox=bbox_props,
+                        color=cost_settings['set1'][0][2],
+                        size=8,
+                        xytext = (16.3, omsz_rmse_lastval + omsz_ydiff))
+    
+    ax1_left.annotate('\u25bc' + ': ' + str(round(idokep_rmse_lastval, 1)),  # Value of annotation
+                        (16.0, idokep_rmse_lastval),
+                        bbox=bbox_props,
+                        color=cost_settings['set1'][1][2],
+                        size=8,
+                        xytext = (16.3, idokep_rmse_lastval + idokep_ydiff))
+
+    ax1_left.annotate('\u25cf' + ': ' + str(round(koponyeg_rmse_lastval, 1)),  # Value of annotation
+                        (16.0, koponyeg_rmse_lastval),
+                        bbox=bbox_props,
+                        color=cost_settings['set1'][2][2],
+                        size=8,
+                        xytext = (16.3, koponyeg_rmse_lastval + koponyeg_ydiff))
+    
+    ax1_left.set_position([0.05, 0.5, 0.52, 0.4])
     ax1_left.grid(True, linestyle=grid_linestyle, color=grid_color)
     
 
@@ -357,7 +402,7 @@ def graph_met():
 
     #Plot correlation lines
     dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Observation')
-    dia.ax.set_position([0.85, 0.27, 0.9, 0.5])
+    #dia.ax.set_position([0.85, 0.27, 0.9, 0.5])
 
     corr_line_color = "c"
     dia.ax.plot(x10, y10, color=corr_line_color)
@@ -436,8 +481,6 @@ def graph_met():
     ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=4, prune='lower'))
     ax2.yaxis.set_label_coords(-0.03, 0.5)
     plt.setp(ax2.get_xticklabels(), visible=False)
-
-
     
     #Searching for absolute Tmin/Tmax values, diag3
     #Ymin
