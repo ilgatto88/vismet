@@ -12,15 +12,17 @@ from taylorDiagram import TaylorDiagram
 import math
 from scipy.interpolate import interp1d
 from scipy.interpolate import pchip
-from matplotlib.offsetbox import (TextArea, OffsetImage, AnchoredOffsetbox,
-                                  AnnotationBbox)
+from matplotlib.offsetbox import (TextArea, OffsetImage, AnchoredOffsetbox, AnnotationBbox)
 from matplotlib.cbook import get_sample_data
+import datetime
 
 #General pyplot style can be used, but it makes problems with the Taylor-Diagram!
 #style.use('fivethirtyeight')
 
 desired_width = 640
 pd.set_option('display.width', desired_width)
+
+now_time = '{0:%Y-%m-%d}'.format(datetime.datetime.now())
 
 #Start of the graphing function
 def graph_met():
@@ -34,6 +36,8 @@ def graph_met():
     grid_color = '#c2c4c2'
     grid_linestyle = '--'
     #print(cost_settings['set1'][0][5])
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.size"] = 13
 
     fig = plt.figure()
 
@@ -279,7 +283,15 @@ def graph_met():
     
     ax1_left.set_xticklabels(list(providers_rmse5day_df['date'])[::4])
     ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
-    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='both'))
+    ax1_left.yaxis.set_label_coords(-0.05, 0.5)
+
+    ax1_left.tick_params(axis='x',     # changes apply to the x-axis
+                    which='both',      # both major and minor ticks are affected
+                    bottom='off',      # ticks along the bottom edge are off
+                    top='off',         # ticks along the top edge are off
+                    labelbottom='on') # labels along the bottom edge are on
+
+    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
     
     """
     ax1_left.text(.9,.9,'centered title',
@@ -302,10 +314,9 @@ def graph_met():
     if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 -= 1
     if abs(ymax_diag1 - max(rmse_maxs)) < 0.2: ymax_diag1 += 1
     ax1_left.set_ylim([ymin_diag1,ymax_diag1])
-    #plt.setp(ax1_left.get_xticklabels(), visible=True)
 
-    #ax1_left.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
-    #ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(6))
+    ax1_left.annotate('Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg vs. Observation', xy=(0.3, 1.12), xytext=(12, -12), va='top',
+             xycoords='axes fraction', textcoords='offset points', color='black', fontsize=15, fontweight='bold')
 
     ax1_left.grid(True, linestyle=grid_linestyle, color=grid_color)
     
@@ -420,6 +431,7 @@ def graph_met():
                 clip_on = False)
 
     ax2.yaxis.set_major_locator(mticker.MaxNLocator(nbins=4, prune='lower'))
+    ax2.yaxis.set_label_coords(-0.03, 0.5)
     plt.setp(ax2.get_xticklabels(), visible=False)
     #ax2.set_xticklabels(list(merged_full['date'])[::1])
     #ax2.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
@@ -442,6 +454,13 @@ def graph_met():
     if abs(ymin_diag2 - min(mins_diag2)) < 1: ymin_diag2 -= 1
     if abs(ymax_diag2 - max(maxs_diag2)) < 1: ymax_diag2 += 1
     ax2.set_ylim([ymin_diag2,ymax_diag2])
+
+    ax2.tick_params(axis='x',     # changes apply to the x-axis
+                    which='both',      # both major and minor ticks are affected
+                    bottom='off',      # ticks along the bottom edge are off
+                    top='off',         # ticks along the top edge are off
+                    labelbottom='on') # labels along the bottom edge are on
+
     ax2.grid(True, linestyle=grid_linestyle, color=grid_color)
     
     #Draw 3rd diagram
@@ -486,9 +505,16 @@ def graph_met():
 
     ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=4, prune='upper'))
     ax3.xaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
+    ax3.yaxis.set_label_coords(-0.03, 0.5)
     list_newDateFormat = []
     for i in range(len(merged_full['date'])):
         list_newDateFormat.append(merged_full['date'][i].strftime("%B %d"))
+
+    ax3.tick_params(axis='x',     # changes apply to the x-axis
+                    which='both',      # both major and minor ticks are affected
+                    bottom='off',      # ticks along the bottom edge are off
+                    top='off',         # ticks along the top edge are off
+                    labelbottom='on') # labels along the bottom edge are on
 
 
     ax3.set_xticklabels(list_newDateFormat[::-4])
@@ -518,7 +544,7 @@ def graph_met():
     #Adding Python logo to the lower right corner
     python_logo = get_sample_data('/home/pi/learning_python/vismet/python.png', asfileobj=False)
     arr_img = plt.imread(python_logo, format='png')
-    imagebox = OffsetImage(arr_img, zoom=0.50, alpha=0.25)
+    imagebox = OffsetImage(arr_img, zoom=0.50, alpha=0.20)
     imagebox.image.axes = ax3
 
     ax3.add_artist(AnnotationBbox(imagebox, [10.0, 0.0],
@@ -526,6 +552,9 @@ def graph_met():
                                 pad=0,
                                 frameon=False,
                                 boxcoords="offset points"))
+
+    ax3.annotate(str(now_time)+' @ János Tordai', xy=(0.9, -0.06), xytext=(12, -12), va='top',
+             xycoords='axes fraction', textcoords='offset points', alpha=0.3, color='black')
     
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
