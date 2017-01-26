@@ -29,8 +29,8 @@ def graph_met():
 
     #Define costumization settings (0: label, 1: marker, 2: color, 3: linestyle, 4: figsize, 5: alpha)
     cost_settings = dict(set1=[['OMSZ', '^', '#919191', '-', 10, 1.0],
-                                ['Idokep', 'v', '#215edf', '-', 10, 0.9],
-                                ['Koponyeg', 'o', '#ea9f11', '-', 10, 0.7]])
+                                ['Időkép', 'v', '#215edf', '-', 10, 0.9],
+                                ['Köpönyeg', 'o', '#ea9f11', '-', 10, 0.7]])
 
     base_linewidth = 3
     grid_color = '#c2c4c2'
@@ -40,6 +40,7 @@ def graph_met():
     plt.rcParams["font.size"] = 13
 
     fig = plt.figure()
+    fig.suptitle("Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg / vs. Observation", fontsize=18)
 
     #Define diagram, subplots
     ax1_left = plt.subplot2grid((4, 10), (0, 0), rowspan=2, colspan=6)
@@ -49,7 +50,8 @@ def graph_met():
     ax1_left.spines["left"].set_visible(False)
     ax1_left.get_xaxis().tick_bottom()    
     ax1_left.get_yaxis().tick_left()
-    plt.ylabel('5-day moving Tmin&Tmax Avg RMSE')
+    #r'5-day moving $Tmin^{RMSE}$'
+    plt.ylabel(s=r'5-day moving AVG($Tmin_{RMSE} + Tmax_{RMSE}$)')
 
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1, colspan=1)
     ax2.spines["top"].set_visible(False)
@@ -58,7 +60,7 @@ def graph_met():
     ax2.spines["left"].set_visible(False)
     ax2.get_xaxis().tick_bottom()    
     ax2.get_yaxis().tick_left()
-    plt.ylabel('Tmin: Fcst vs. Obs [°C]')
+    plt.ylabel('Tmax: Fcst vs. Obs [°C]')
 
     ax3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, colspan=1, sharex=ax2)
     ax3.spines["top"].set_visible(False)
@@ -67,7 +69,7 @@ def graph_met():
     ax3.spines["left"].set_visible(False)
     ax3.get_xaxis().tick_bottom()    
     ax3.get_yaxis().tick_left()
-    plt.ylabel('Tmax: Fcst vs. Obs [°C]')
+    plt.ylabel('Tmin: Fcst vs. Obs [°C]')
 	
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)#, wspace=0.2, hspace=0)
 
@@ -292,11 +294,6 @@ def graph_met():
 
     ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
     
-    """
-    ax1_left.text(.9,.9,'centered title',
-        horizontalalignment='center',
-        transform=ax1_left.transAxes)
-    """
     
     #Searching for absolute Tmin/Tmax values
     #Ymin
@@ -313,33 +310,62 @@ def graph_met():
     if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 -= 1
     if abs(ymax_diag1 - max(rmse_maxs)) < 0.2: ymax_diag1 += 1
     ax1_left.set_ylim([ymin_diag1,ymax_diag1])
-
-    #ax1_left.annotate('Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg vs. Observation', xy=(0.3, 1.12), xytext=(12, -12), va='top',
-             #xycoords='axes fraction', textcoords='offset points', color='black', fontsize=15, fontweight='bold')
     
-    bbox_props = dict(boxstyle='round', fc='w', ec='black')
+    bbox_props = dict(boxstyle='round', fc='white', ec='#ebebe0')
     
     omsz_ydiff = 0
     idokep_ydiff = 0
     koponyeg_ydiff = 0
 
-    omsz_rmse_lastval =  providers_rmse5day_df['rmse5day_omsz'][len(providers_rmse5day_df['rmse5day_omsz'])-1]
-    idokep_rmse_lastval =  providers_rmse5day_df['rmse5day_idokep'][len(providers_rmse5day_df['rmse5day_idokep'])-1]
-    koponyeg_rmse_lastval =  providers_rmse5day_df['rmse5day_koponyeg'][len(providers_rmse5day_df['rmse5day_koponyeg'])-1]
+    omsz_rmse_lastval = providers_rmse5day_df['rmse5day_omsz'][len(providers_rmse5day_df['rmse5day_omsz'])-1]
+    idokep_rmse_lastval = providers_rmse5day_df['rmse5day_idokep'][len(providers_rmse5day_df['rmse5day_idokep'])-1]
+    koponyeg_rmse_lastval = providers_rmse5day_df['rmse5day_koponyeg'][len(providers_rmse5day_df['rmse5day_koponyeg'])-1]
 
-    print(omsz_rmse_lastval)
-    print(idokep_rmse_lastval)
-    print(koponyeg_rmse_lastval)
+    if omsz_rmse_lastval >= idokep_rmse_lastval and omsz_rmse_lastval >= koponyeg_rmse_lastval:
+        if idokep_rmse_lastval >= koponyeg_rmse_lastval:
+            if abs(omsz_rmse_lastval - idokep_rmse_lastval) < 0.2:
+                omsz_ydiff += 0.2
+            if abs(idokep_rmse_lastval - koponyeg_rmse_lastval) < 0.2:
+                koponyeg_ydiff -= 0.2
+        else:
+            if abs(omsz_rmse_lastval - koponyeg_rmse_lastval) < 0.2:
+                omsz_ydiff += 0.2
+            if abs(koponyeg_rmse_lastval - idokep_rmse_lastval) < 0.2:
+                idokep_ydiff -= 0.2
 
-    if omsz_rmse_lastval > idokep_rmse_lastval and omsz_rmse_lastval > koponyeg_rmse_lastval:
-        omsz_ydiff += 0.2
-        if idokep_rmse_lastval > koponyeg_rmse_lastval:
-            koponyeg_ydiff -= 0.2
-    if  idokep_rmse_lastval > omsz_rmse_lastval and idokep_rmse_lastval > koponyeg_rmse_lastval:
-        idokep_ydiff += 0.2
-    if koponyeg_rmse_lastval > omsz_rmse_lastval and koponyeg_rmse_lastval > idokep_rmse_lastval:
-        koponyeg_rmse_lastval += 0.2
+    elif idokep_rmse_lastval >= omsz_rmse_lastval and idokep_rmse_lastval >= koponyeg_rmse_lastval:
+        if omsz_rmse_lastval >= koponyeg_rmse_lastval:
+            if abs(idokep_rmse_lastval - omsz_rmse_lastval) < 0.2:
+                idokep_ydiff += 0.2
+            if abs(omsz_rmse_lastval - koponyeg_rmse_lastval) < 0.2:
+                koponyeg_ydiff -= 0.2
+        else:
+            if abs(idokep_rmse_lastval - koponyeg_rmse_lastval) < 0.2:
+                idokep_ydiff += 0.2
+            if abs(koponyeg_rmse_lastval - omsz_rmse_lastval) < 0.2:
+                omsz_ydiff -= 0.2
 
+    elif koponyeg_rmse_lastval >= omsz_rmse_lastval and koponyeg_rmse_lastval >= koponyeg_rmse_lastval:
+        if omsz_rmse_lastval >= idokep_rmse_lastval:
+            if abs(koponyeg_rmse_lastval - omsz_rmse_lastval) < 0.2:
+                koponyeg_ydiff += 0.2
+            if abs(omsz_rmse_lastval - idokep_rmse_lastval) < 0.2:
+                idokep_ydiff -= 0.2
+        else:
+            if abs(koponyeg_rmse_lastval - idokep_rmse_lastval) < 0.2:
+                koponyeg_ydiff += 0.2
+            if abs(idokep_rmse_lastval - omsz_rmse_lastval) < 0.2:
+                omsz_ydiff -= 0.2
+
+    if omsz_ydiff != 0 or idokep_ydiff != 0 or koponyeg_ydiff != 0:
+        print('Adjusted the annotations.')
+        if omsz_ydiff != 0:
+            print('OMSZ annotation y position changed:', omsz_ydiff)
+        if idokep_ydiff != 0:
+            print('Idokep annotation y position changed:', idokep_ydiff)
+        if koponyeg_ydiff != 0:
+            print('Koponyeg annotation y position changed:', koponyeg_ydiff)
+    
     ax1_left.annotate('\u25b2' + ': ' + str(round(omsz_rmse_lastval, 2)),  # Value of annotation
                         (16.0, omsz_rmse_lastval),
                         bbox=bbox_props,
@@ -402,7 +428,6 @@ def graph_met():
 
     #Plot correlation lines
     dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Observation')
-    #dia.ax.set_position([0.85, 0.27, 0.9, 0.5])
 
     corr_line_color = "c"
     dia.ax.plot(x10, y10, color=corr_line_color)
@@ -420,7 +445,7 @@ def graph_met():
         #print(i)
 
     #Plot samples on the Taylor-Diagram
-    for i,(stddev,corrcoef,name, marker1, colors1) in enumerate(samples['alap']):
+    for i,(stddev, corrcoef, name, marker1, colors1) in enumerate(samples['alap']):
         dia.add_sample(stddev, corrcoef,
                        marker=marker1, ms=10, ls='', # marker='$%d$' % (i+1)
                        mfc=colors1, mec='black', # Colors
@@ -435,7 +460,9 @@ def graph_met():
     #Legend settings
     fig.legend(dia.samplePoints,
                [p.get_label() for p in dia.samplePoints],
-                numpoints=1, bbox_to_anchor = (0.95, 0.95))
+                numpoints=1, bbox_to_anchor = (0.96, 0.90))
+
+    dia._ax.set_position([0.54, 0.49, 0.40, 0.40])
                 
     ############################
     ######Draw 2nd diagram######
