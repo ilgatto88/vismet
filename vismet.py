@@ -36,11 +36,11 @@ def graph_met():
     grid_color = '#c2c4c2'
     grid_linestyle = '--'
     #print(cost_settings['set1'][0][5])
-    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.size"] = 13
 
     fig = plt.figure()
-    fig.suptitle("Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg / vs. Observation", fontsize=18)
+    fig.suptitle("Day1 Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg / vs. Observation", fontsize=18, weight='light')
 
     #Define diagram, subplots
     ax1_left = plt.subplot2grid((4, 10), (0, 0), rowspan=2, colspan=6)
@@ -51,7 +51,7 @@ def graph_met():
     ax1_left.get_xaxis().tick_bottom()    
     ax1_left.get_yaxis().tick_left()
     #r'5-day moving $Tmin^{RMSE}$'
-    plt.ylabel(s=r'5-day moving AVG($Tmin_{RMSE} + Tmax_{RMSE}$)')
+    plt.ylabel(s=r'5-day moving Avg($Tmin_{RMSE} + Tmax_{RMSE}$)')
 
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1, colspan=1)
     ax2.spines["top"].set_visible(False)
@@ -627,11 +627,11 @@ def graph_met():
                                 boxcoords="offset points"))
 
     ax3.annotate(str(now_time)+' @ János Tordai', xy=(0.9, -0.06), xytext=(12, -12), va='top',
-             xycoords='axes fraction', textcoords='offset points', alpha=0.3, color='black')
+             xycoords='axes fraction', textcoords='offset points', alpha=0.25, color='black')
     
     ax3.set_position([0.05, 0.05, 0.9, 0.16])
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
-    fig.savefig('/home/pi/Desktop/1.png', facecolor='white')#fig.get_facecolor())
+    fig.savefig('/home/pi/Desktop/vismet_day1_'+str(now_time)+'.png', facecolor='white')#fig.get_facecolor())
 
 graph_met()
