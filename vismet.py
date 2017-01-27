@@ -25,9 +25,12 @@ today = '{0:%Y-%m-%d}'.format(datetime.datetime.now())
 def graph_met():
 
     #Define providers costumization settings (0: label, 1: marker, 2: color, 3: linestyle, 4: markersize, 5: alpha)
-    cost_settings = dict(set1=[['OMSZ', '^', '#919191', '-', 10, 1.0],
+    cost_settings = dict(set1=[
+                                ['OMSZ', '^', '#919191', '-', 10, 1.0],
                                 ['Időkép', 'v', '#215edf', '-', 10, 0.9],
-                                ['Köpönyeg', 'o', '#ea9f11', '-', 10, 0.7]])
+                                ['Köpönyeg', 'o', '#ea9f11', '-', 10, 0.7]
+                                ]
+                        )
 
     #Basic costumization settings
     base_linewidth = 3
@@ -59,7 +62,7 @@ def graph_met():
     ax2.spines["left"].set_visible(False)
     ax2.get_xaxis().tick_bottom()    
     ax2.get_yaxis().tick_left()
-    plt.ylabel('Tmax: Fcst vs. Obs [°C]')
+    plt.ylabel(s=r'$Tmax_{Fcst}$ vs. $Tmax_{Obs}$ [°C]')
 
     ax3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1, colspan=1, sharex=ax2)
     ax3.spines["top"].set_visible(False)
@@ -68,7 +71,7 @@ def graph_met():
     ax3.spines["left"].set_visible(False)
     ax3.get_xaxis().tick_bottom()    
     ax3.get_yaxis().tick_left()
-    plt.ylabel('Tmin: Fcst vs. Obs [°C]')
+    plt.ylabel(s=r'$Tmin_{Fcst}$ vs. $Tmin_{Obs}$ [°C]')
 	
     #Margins
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
@@ -364,21 +367,21 @@ def graph_met():
         if koponyeg_ydiff != 0:
             print('Koponyeg annotation y position changed:', koponyeg_ydiff)
     
-    ax1_left.annotate('\u25b2' + ': ' + str(round(omsz_rmse_lastval, 2)),  # Value of annotation
+    ax1_left.annotate('\u25b2' + ': ' + str("%.2f" % round(omsz_rmse_lastval, 2)),  # Value of annotation
                         (16.0, omsz_rmse_lastval),
                         bbox=bbox_props,
                         color=cost_settings['set1'][0][2],
                         size=8,
                         xytext = (16.3, omsz_rmse_lastval + omsz_ydiff))
     
-    ax1_left.annotate('\u25bc' + ': ' + str(round(idokep_rmse_lastval, 1)),  # Value of annotation
+    ax1_left.annotate('\u25bc' + ': ' + str("%.2f" % round(idokep_rmse_lastval, 1)),  # Value of annotation
                         (16.0, idokep_rmse_lastval),
                         bbox=bbox_props,
                         color=cost_settings['set1'][1][2],
                         size=8,
                         xytext = (16.3, idokep_rmse_lastval + idokep_ydiff))
 
-    ax1_left.annotate('\u25cf' + ': ' + str(round(koponyeg_rmse_lastval, 1)),  # Value of annotation
+    ax1_left.annotate('\u25cf' + ': ' + str("%.2f" % round(koponyeg_rmse_lastval, 1)),  # Value of annotation
                         (16.0, koponyeg_rmse_lastval),
                         bbox=bbox_props,
                         color=cost_settings['set1'][2][2],
