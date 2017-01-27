@@ -128,9 +128,10 @@ if error_count > 0:
     send_to = cred_list_gmail[0]
     mail_subject = 'metgrab.py warning message'
     if error_count < 100:
-        mail_text = 'Database is missing some data, please check it!\nNumber of wrong or incomplete tables: ' + str(error_count) + '\n' + error_msg
+        mail_text = 'Database is missing some data, please check it!\nNumber of wrong or incomplete tables: '
+        + str(error_count) + '\n' + error_msg + '\nDiagram has not been drawn.'
     else:
-        mail_text = 'Database connection problem!'
+        mail_text = 'Database connection problem!' + '\nDiagram has not been drawn.'
 
     #GMail creditentials
     gmail_sender = cred_list_gmail[0]
@@ -158,4 +159,4 @@ if error_count > 0:
 
 else:
     print('Starting vismet.py...')
-    os.system('python3 /home/pi/learning_python/vismet/vismet.py')
+    os.system('python3 /home/pi/working_python/metgrab/vismet.py')
