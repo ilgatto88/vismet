@@ -1,37 +1,35 @@
 # -*- coding: utf-8 -*-
 
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import matplotlib.pyplot as plt
-#from matplotlib import style
-import matplotlib.ticker as mticker
-import matplotlib.dates as mdates
-import pandas as pd
-import numpy as np
-from taylorDiagram import TaylorDiagram
-import math
-from scipy.interpolate import interp1d
-from scipy.interpolate import pchip
-from matplotlib.offsetbox import (TextArea, OffsetImage, AnchoredOffsetbox, AnnotationBbox)
-from matplotlib.cbook import get_sample_data
-import datetime
+import datetime # mainly for the output file name
+import psycopg2 # postgreSQL database connection
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT # postgreSQL database connection
+import matplotlib.pyplot as plt # main module
+import matplotlib.ticker as mticker #tick settings
+import pandas as pd # dataframe creation
+import numpy as np # interpolation, std deviation, etc
+from taylorDiagram import TaylorDiagram # Yannick Copin
+import math # sqrt, ceil, floor, etc.
+from scipy.interpolate import pchip # interpolation
+from matplotlib.offsetbox import (OffsetImage, AnnotationBbox) # for the python logo
+from matplotlib.cbook import get_sample_data # for the python logo
 
-#General pyplot style can be used, but it makes problems with the Taylor-Diagram!
-#style.use('fivethirtyeight')
 
+# Python terminal setting
 desired_width = 640
 pd.set_option('display.width', desired_width)
 
-now_time = '{0:%Y-%m-%d}'.format(datetime.datetime.now())
+#Actual formatted date
+today = '{0:%Y-%m-%d}'.format(datetime.datetime.now())
 
 #Start of the graphing function
 def graph_met():
 
-    #Define costumization settings (0: label, 1: marker, 2: color, 3: linestyle, 4: figsize, 5: alpha)
+    #Define providers costumization settings (0: label, 1: marker, 2: color, 3: linestyle, 4: markersize, 5: alpha)
     cost_settings = dict(set1=[['OMSZ', '^', '#919191', '-', 10, 1.0],
                                 ['Időkép', 'v', '#215edf', '-', 10, 0.9],
                                 ['Köpönyeg', 'o', '#ea9f11', '-', 10, 0.7]])
 
+    #Basic costumization settings
     base_linewidth = 3
     grid_color = '#c2c4c2'
     grid_linestyle = '--'
@@ -40,9 +38,11 @@ def graph_met():
     plt.rcParams["font.size"] = 13
 
     fig = plt.figure()
+
+    #Title
     fig.suptitle("Day1 Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg / vs. Observation\nBudapest", fontsize=18, weight='light')
 
-    #Define diagram, subplots
+    #Define subplots
     ax1_left = plt.subplot2grid((4, 10), (0, 0), rowspan=2, colspan=6)
     ax1_left.spines["top"].set_visible(False)
     ax1_left.spines["bottom"].set_visible(False)    
@@ -50,7 +50,6 @@ def graph_met():
     ax1_left.spines["left"].set_visible(False)
     ax1_left.get_xaxis().tick_bottom()    
     ax1_left.get_yaxis().tick_left()
-    #r'5-day moving $Tmin^{RMSE}$'
     plt.ylabel(s=r'5-day moving Avg($Tmin_{RMSE} + Tmax_{RMSE}$)')
 
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1, colspan=1)
@@ -71,7 +70,8 @@ def graph_met():
     ax3.get_yaxis().tick_left()
     plt.ylabel('Tmin: Fcst vs. Obs [°C]')
 	
-    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)#, wspace=0.2, hspace=0)
+    #Margins
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)
 
     #Fetching login data from text file
     cred_list = []
@@ -82,7 +82,7 @@ def graph_met():
     user = cred_list[0]
     pword = cred_list[1]
 
-	# Connecting to met_project database, exception
+	# Connecting to met_project database \ exception
     try:
         database = "dbname = 'met_project' user = '"+user+"' host = 'localhost' password = '"+pword+"'"
         conn = psycopg2.connect(database)
@@ -97,9 +97,9 @@ def graph_met():
     cur = conn.cursor()
 
     # Fetching provider data
-    sql_get_omsz = "SELECT fcst_date, fcst_tmin_for_day1, fcst_tmax_for_day1 FROM omsz_table ORDER BY timeofrequest DESC LIMIT 23;" #ORDER BY timeofrequest ASC
+    sql_get_omsz = "SELECT fcst_date, fcst_tmin_for_day1, fcst_tmax_for_day1 FROM omsz_table ORDER BY timeofrequest DESC LIMIT 23;"
     cur.execute(sql_get_omsz)
-    omsz_fetched = pd.DataFrame(cur.fetchall(), columns=['date', 'omsz_tmin', 'omsz_tmax'], dtype=int)
+    omsz_fetched = pd.DataFrame(cur.fetchall(), columns=['date', 'omsz_tmin', 'omsz_tmax'])
 
     sql_get_idokep = "SELECT fcst_tmin_for_day1, fcst_tmax_for_day1 FROM idokep_table ORDER BY timeofrequest DESC LIMIT 23;"
     cur.execute(sql_get_idokep)
@@ -126,13 +126,10 @@ def graph_met():
     merged_full_reverse = pd.merge(concat_prov, merged_ogimet)
     merged_full = merged_full_reverse[::-1]
 
-    #Replacing nan to NA (string)
-    #merged_full_NArepl_reverse = merged_full.replace(pd.np.nan, 'NA')
+    #Replacing nan to NA (type=string)
     merged_full_NArepl = merged_full.replace(pd.np.nan, 'NA')
 
-    
-    #Calculating data for the Taylor Diagram
-    #Calculating standard deviation of the observation
+    #Calculating standard deviation of the observation for the Taylor Diagram
     ogimet_stdev = np.std(merged_full['ogimet_tmin']+merged_full['ogimet_tmax'])
 
     #Create dataframe for correlation calculations
@@ -144,7 +141,7 @@ def graph_met():
                                             'Ogimet': merged_full['ogimet_tmin'].append(merged_full['ogimet_tmax'])})
 
 
-    ######Calculating 5 day moving RMSE of providers forecast vs observation######
+    #Calculating 5 day moving RMSE of providers forecast vs observation
     ###OMSZ Tmin & Tmax
     list4rmse_omsz = []
     
@@ -169,7 +166,7 @@ def graph_met():
 
     omsz_rmse5day_df = pd.DataFrame.from_records(list4rmse_omsz, columns=['date', 'rmse5day_omsz'])
 
-    ######Calculating 5 day moving RMSE of providers forecast vs observation######
+    #Calculating 5 day moving RMSE of providers forecast vs observation
     ###Idokep Tmin & Tmax
     list4rmse_idokep = []
     for i in range(len(merged_full_NArepl[['date', 'omsz_tmin', 'omsz_tmax', 'ogimet_tmin', 'ogimet_tmax']])-5, -1, -1):
@@ -193,7 +190,7 @@ def graph_met():
 
     idokep_rmse5day_df = pd.DataFrame.from_records(list4rmse_idokep, columns=['date', 'rmse5day_idokep'])
 
-    ######Calculating 5 day moving RMSE of providers forecast vs observation######
+    #Calculating 5 day moving RMSE of providers forecast vs observation
     ###koponyeg Tmin & Tmax
     list4rmse_koponyeg = []
     for i in range(len(merged_full_NArepl[['date', 'omsz_tmin', 'omsz_tmax', 'ogimet_tmin', 'ogimet_tmax']])-5, -1, -1):
@@ -222,7 +219,8 @@ def graph_met():
     providers_rmse5day_df = providers_rmse5day_df_omsz_idokep.merge(koponyeg_rmse5day_df, how='inner', on='date')
     providers_rmse5day_df.columns = ['date', 'rmse5day_omsz', 'rmse5day_idokep', 'rmse5day_koponyeg']
 
-    #Draw 1st diagram
+    #Drawing 1st diagram
+    #Interpolating RMSE values
     base_daterange = range(0, len(providers_rmse5day_df['date']))
     omsz_rmse_y = list(providers_rmse5day_df['rmse5day_omsz'])
     idokep_rmse_y = list(providers_rmse5day_df['rmse5day_idokep'])#[::-1]
@@ -233,25 +231,22 @@ def graph_met():
     interp_idokep = pchip(base_daterange, idokep_rmse_y)
     interp_koponyeg = pchip(base_daterange, koponyeg_rmse_y)
 
-
-    
+    #Plotting OMSZ RMSE lines + scatter
     ax1_left.plot(interp_daterange[:-10], interp_omsz(interp_daterange)[:-10], cost_settings['set1'][0][3],
         label='rmse5day_omsz',
         linewidth=base_linewidth,
         color=cost_settings['set1'][0][2])
 
-    #print(interp_daterange[:-10])
-    #print(interp_omsz(interp_daterange)[:-10])
-
     ax1_left.plot(base_daterange, omsz_rmse_y, ' ',
                 label='rmse5day_omsz_dots',
                 marker=cost_settings['set1'][0][1],
-                mec='black',
-                ms=cost_settings['set1'][0][4],
+                mec='black',                        #markeredgecolor
+                ms=cost_settings['set1'][0][4],     #markersize
                 alpha=cost_settings['set1'][0][5],
                 color=cost_settings['set1'][0][2],
                 clip_on = False)
 
+    #Plotting Időkép RMSE lines + scatter
     ax1_left.plot(interp_daterange[:-10], interp_idokep(interp_daterange)[:-10],
         cost_settings['set1'][1][3],
         label='rmse5day_idokep',
@@ -261,12 +256,13 @@ def graph_met():
     ax1_left.plot(base_daterange, idokep_rmse_y, ' ',
                 label='idokep_tmax',
                 marker=cost_settings['set1'][1][1],
-                mec='black',
-                ms=cost_settings['set1'][0][4],
+                mec='black',                        #markeredgecolor
+                ms=cost_settings['set1'][0][4],     #markersize
                 alpha=cost_settings['set1'][1][5],
                 color=cost_settings['set1'][1][2],
                 clip_on = False)
 
+    #Plotting Köpönyeg RMSE lines + scatter
     ax1_left.plot(interp_daterange[:-10], interp_koponyeg(interp_daterange)[:-10],
         cost_settings['set1'][2][3],
         label='rmse5day_koponyeg',
@@ -276,14 +272,14 @@ def graph_met():
     ax1_left.plot(base_daterange, koponyeg_rmse_y, ' ',
                 label='koponyeg_tmax',
                 marker=cost_settings['set1'][2][1],
-                mec='black',
-                ms=cost_settings['set1'][0][4],
+                mec='black',                        #markeredgecolor
+                ms=cost_settings['set1'][0][4],     #markersize
                 alpha=cost_settings['set1'][2][5],
                 color=cost_settings['set1'][2][2],
                 clip_on = False)
     
-    ax1_left.set_xticklabels(list(providers_rmse5day_df['date'])[::4])
-    ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
+    ax1_left.set_xticklabels(list(providers_rmse5day_df['date'])[::4])  #x axis ticklabels, step=4
+    ax1_left.xaxis.set_major_locator(mticker.MaxNLocator(nbins=5))      #x axis number of ticks
     ax1_left.yaxis.set_label_coords(-0.05, 0.5)
 
     ax1_left.tick_params(axis='x',     # changes apply to the x-axis
@@ -292,10 +288,9 @@ def graph_met():
                     top='off',         # ticks along the top edge are off
                     labelbottom='on') # labels along the bottom edge are on
 
-    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))
+    ax1_left.yaxis.set_major_locator(mticker.MaxNLocator(nbins=5, prune='lower'))   #y axis number of ticks
     
-    
-    #Searching for absolute Tmin/Tmax values
+    #Searching for absolute Tmin/Tmax values, setting ylim values
     #Ymin
     rmse_mins = [ float(providers_rmse5day_df['rmse5day_omsz'].min()),
                     float(providers_rmse5day_df['rmse5day_idokep'].min()),
@@ -309,8 +304,10 @@ def graph_met():
 
     if abs(ymin_diag1 - min(rmse_mins)) < 0.2: ymin_diag1 -= 1
     if abs(ymax_diag1 - max(rmse_maxs)) < 0.2: ymax_diag1 += 1
+
     ax1_left.set_ylim([ymin_diag1,ymax_diag1])
     
+    #Annotations next to the RMSE lines
     bbox_props = dict(boxstyle='round', fc='white', ec='#ebebe0')
     
     omsz_ydiff = 0
@@ -321,6 +318,7 @@ def graph_met():
     idokep_rmse_lastval = providers_rmse5day_df['rmse5day_idokep'][len(providers_rmse5day_df['rmse5day_idokep'])-1]
     koponyeg_rmse_lastval = providers_rmse5day_df['rmse5day_koponyeg'][len(providers_rmse5day_df['rmse5day_koponyeg'])-1]
 
+    #Adjusting position on the y axis
     if omsz_rmse_lastval >= idokep_rmse_lastval and omsz_rmse_lastval >= koponyeg_rmse_lastval:
         if idokep_rmse_lastval >= koponyeg_rmse_lastval:
             if abs(omsz_rmse_lastval - idokep_rmse_lastval) < 0.2:
@@ -393,17 +391,17 @@ def graph_met():
 
     #######################################################
     ###################Taylor-diagram######################
-    #Defining sample data (providers stdev, corr and name)
+    #Defining sample data (providers stdev, corr and name)#
 
-    samples = dict(alap=[[np.std(merged_full['omsz_tmin']+merged_full['omsz_tmax']),
+    samples = dict(alap=[
+                        [np.std(merged_full['omsz_tmin']+merged_full['omsz_tmax']),
                             round(df_for_corr_omsz.corr()['OMSZ'][1], 4), cost_settings['set1'][0][0], cost_settings['set1'][0][1], cost_settings['set1'][0][2]],
                          [np.std(merged_full['idokep_tmin'] + merged_full['idokep_tmax']),
                             round(df_for_corr_idokep.corr()['Idokep'][1], 4), cost_settings['set1'][1][0], cost_settings['set1'][1][1], cost_settings['set1'][1][2]],
                          [np.std(merged_full['koponyeg_tmin'] + merged_full['koponyeg_tmax']),
-                            round(df_for_corr_koponyeg.corr()['Koponyeg'][1], 4), cost_settings['set1'][2][0], cost_settings['set1'][2][1], cost_settings['set1'][2][2]]])
-
-    #Define plotting colors, cm is colormap, Set1 is the first cm set
-    colors = plt.matplotlib.cm.Set1(np.linspace(0, 1, len(merged_full['ogimet_tmin'])))
+                            round(df_for_corr_koponyeg.corr()['Koponyeg'][1], 4), cost_settings['set1'][2][0], cost_settings['set1'][2][1], cost_settings['set1'][2][2]]
+                        ]
+                    )
 
     #Define correlation line coordinates
     r_cir = ogimet_stdev * 1.5
@@ -426,7 +424,7 @@ def graph_met():
     x90 = [0.05, 0.450] #corr=0.9
     y90 = [0.0, r_cir]
 
-    #Plot correlation lines
+    #Draving Taylor-diagram and plotting correlation lines
     dia = TaylorDiagram.TaylorDiagram(ogimet_stdev, fig=fig, rect=222, label='Observation')
 
     corr_line_color = "c"
@@ -440,16 +438,12 @@ def graph_met():
     dia.ax.plot(x80, y80, color=corr_line_color)
     dia.ax.plot(x90, y90, color=corr_line_color)
 
-    #markers = dict([('*', 0),(',', 1),('.', 2)])
-    #for i in markers.keys():
-        #print(i)
 
     #Plot samples on the Taylor-Diagram
     for i,(stddev, corrcoef, name, marker1, colors1) in enumerate(samples['alap']):
         dia.add_sample(stddev, corrcoef,
-                       marker=marker1, ms=10, ls='', # marker='$%d$' % (i+1)
-                       mfc=colors1, mec='black', # Colors
-                       #mfc=colors[i], mec=colors[i], # Colors
+                       marker=marker1, ms=10, ls='', #ms=markersize
+                       mfc=colors1, mec='black', # mfc=markerfacecolor, mec=markeredgecolor
                        label=name)
 
 
@@ -460,13 +454,16 @@ def graph_met():
     #Legend settings
     fig.legend(dia.samplePoints,
                [p.get_label() for p in dia.samplePoints],
-                numpoints=1, bbox_to_anchor = (0.96, 0.90))
-
+                numpoints=1, bbox_to_anchor = (0.96, 0.90)
+                )
+    #Taylor-diagram position, _ is important in ._ax
     dia._ax.set_position([0.54, 0.49, 0.40, 0.40])
                 
     ############################
     ######Draw 2nd diagram######
     ############################
+
+    #Interpolating
     base_daterange_diag2 = range(0, len(merged_full['date']))
     ogimet_diag2_y = list(merged_full['ogimet_tmax'])
     omsz_diag2_y = list(merged_full['omsz_tmax'])
@@ -476,8 +473,10 @@ def graph_met():
 
     interp = pchip(base_daterange_diag2, ogimet_diag2_y)
     
+    #Plotting interpolated observation
     ax2.plot(interp_daterange_diag2[:-10], interp(interp_daterange_diag2)[:-10], '-', label='ogimet_tmax', linewidth=base_linewidth, color='black')
     
+    #Plotting OMSZ, Időkép & Köpönyeg tmax values
     ax2.plot(base_daterange_diag2, omsz_diag2_y, ' ',
                 label='omsz_tmax',
                 marker=cost_settings['set1'][0][1],
@@ -509,7 +508,7 @@ def graph_met():
     ax2.yaxis.set_label_coords(-0.03, 0.5)
     plt.setp(ax2.get_xticklabels(), visible=False)
     
-    #Searching for absolute Tmin/Tmax values, diag3
+    #Searching for absolute Tmin/Tmax values, diag2
     #Ymin
     mins_diag2 = [ float(merged_full['ogimet_tmax'].min()),
                     float(merged_full['omsz_tmax'].min()),
@@ -527,11 +526,11 @@ def graph_met():
     if abs(ymax_diag2 - max(maxs_diag2)) < 1: ymax_diag2 += 1
     ax2.set_ylim([ymin_diag2,ymax_diag2])
 
-    ax2.tick_params(axis='x',     # changes apply to the x-axis
-                    which='both',      # both major and minor ticks are affected
-                    bottom='off',      # ticks along the bottom edge are off
-                    top='off',         # ticks along the top edge are off
-                    labelbottom='on') # labels along the bottom edge are on
+    ax2.tick_params(axis='x',           # changes apply to the x-axis
+                    which='both',       # both major and minor ticks are affected
+                    bottom='off',       # ticks along the bottom edge are off
+                    top='off',          # ticks along the top edge are off
+                    labelbottom='on')   # labels along the bottom edge are on
 
     ax2.set_position([0.05, 0.27, 0.9, 0.16])
     ax2.grid(True, linestyle=grid_linestyle, color=grid_color)
@@ -547,8 +546,10 @@ def graph_met():
 
     interp = pchip(base_daterange_diag3, ogimet_diag3_y)
     
+    #Plotting interpolated observation
     ax3.plot(interp_daterange_diag3[:-10], interp(interp_daterange_diag3)[:-10], '-', label='ogimet_tmin', linewidth=base_linewidth, color='black')
     
+    #Plotting OMSZ, Időkép & Köpönyeg tmax values
     ax3.plot(base_daterange_diag3, omsz_diag3_y, ' ',
                 label='omsz_tmin',
                 marker=cost_settings['set1'][0][1],
@@ -579,6 +580,8 @@ def graph_met():
     ax3.yaxis.set_major_locator(mticker.MaxNLocator(nbins=4, prune='upper'))
     ax3.xaxis.set_major_locator(mticker.MaxNLocator(nbins=5))
     ax3.yaxis.set_label_coords(-0.03, 0.5)
+
+    #Creating new dataframe for the "%B %d" date format
     list_newDateFormat = []
     for i in range(len(merged_full['date'])):
         list_newDateFormat.append(merged_full['date'][i].strftime("%B %d"))
@@ -589,12 +592,8 @@ def graph_met():
                     top='off',         # ticks along the top edge are off
                     labelbottom='on') # labels along the bottom edge are on
 
-
     ax3.set_xticklabels(list_newDateFormat[::-4])
-    #ax3.set_xticklabels(list(providers_rmse5day_df['date'])[::2])
-    #ax3.xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
 
-    
     #Searching for absolute Tmin/tmax values, diag3
     #Ymin
     mins_diag3 = [ float(merged_full['ogimet_tmin'].min()),
@@ -624,14 +623,16 @@ def graph_met():
                                 xybox=(670., -110.),
                                 pad=0,
                                 frameon=False,
-                                boxcoords="offset points"))
+                                boxcoords="offset points")
+                    )
 
-    ax3.annotate(str(now_time)+' @ János Tordai', xy=(0.9, -0.06), xytext=(12, -12), va='top',
+    ax3.annotate(str(today)+' @ János Tordai', xy=(0.9, -0.06), xytext=(12, -12), va='top',
              xycoords='axes fraction', textcoords='offset points', alpha=0.25, color='black')
     
     ax3.set_position([0.05, 0.05, 0.9, 0.16])
+
     #Set figure size and save it
     fig.set_size_inches(20, 11.25) #1920x1080 pixel -> 20x11.25 inch
-    fig.savefig('/home/pi/Desktop/vismet_day1_'+str(now_time)+'.png', facecolor='white')#fig.get_facecolor())
+    fig.savefig('/home/pi/Documents/vismet_images/vismet_day1_'+str(today)+'.png', facecolor='white')
 
 graph_met()
