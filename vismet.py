@@ -40,7 +40,7 @@ def graph_met():
     plt.rcParams["font.size"] = 13
 
     fig = plt.figure()
-    fig.suptitle("Day1 Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg / vs. Observation", fontsize=18, weight='light')
+    fig.suptitle("Day1 Minimum & Maximum Temperature Forecast Verification: OMSZ / Időkép / Köpönyeg / vs. Observation\nBudapest", fontsize=18, weight='light')
 
     #Define diagram, subplots
     ax1_left = plt.subplot2grid((4, 10), (0, 0), rowspan=2, colspan=6)
