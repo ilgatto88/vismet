@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from bs4 import BeautifulSoup
-import urllib.request
-import datetime
-from pandas import DataFrame
-import csv
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import smtplib
+from bs4 import BeautifulSoup   # for web scraping
+import urllib.request           # loading website
+import datetime                 # actual date, comparing dates
+from pandas import DataFrame    # creating dataframes
+import csv                      # in case of emergecy, append data to the csv file
+import psycopg2                 # connecting to the postgreSQL database
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT      # connecting to the postgreSQL database
+import smtplib                  # sending e-mail
 
 
 # Start writing the logfile
@@ -30,10 +30,10 @@ logfile_txt.append(str(now_time))
 
 def omsz_scrape():
 
-    # With this script you can scrabe data from the webpage of the Hungarian Weather Service (OMSZ)
+    # Scraping data from the webpage of the Hungarian Weather Service (OMSZ)
     # It collects the date, the city name, the forecasted minimum and maximum temperature.
     # The output is a list, containing the DataType id, Provider (OMSZ), date of the forecast, city and
-    # the two temperature parameters. They can only be integer numbers.
+    # the two temperature parameters. Numbers are integers.
 
 
     # Date today, datetime and str formats
@@ -45,15 +45,15 @@ def omsz_scrape():
     str_date_tomorrow = (date_tomorrow).strftime('%Y-%m-%d')
 
     try:
+        # Basic url
         url_omsz = 'http://met.hu/idojaras/elorejelzes/kozeptavu_elorejelzes/main.php?c=tablazat&v=Budapest'
 
-        # At first we create a Beautiful Soup data, this will allow us to easily search for data on the webpage
+        # Create Beautiful Soup data, this will allow us to easily search for data on the webpage
         page = urllib.request.urlopen(url_omsz).read()
         soup = BeautifulSoup(page, 'lxml')
 
         # Get city name
         omsz_city = soup.find_all('option', class_='akt')[1].text
-
 
         # The month and day from the first line of the data table. Months has to be converted: 'november' -> 11
         omsz_date = (soup.find_all('th', class_='rbg0')[0].get_text()).split()
@@ -63,8 +63,8 @@ def omsz_scrape():
                 'június': '06', 'július': '07', 'augusztus': '08', 'szeptember': '09', 'október': '10',
                 'november': '11', 'december': '12'}
 
-        # Grab the actual date from the OMSZ webpage. First the year, the month and day is taken
-        # from the line from where I take the chosen values!
+        # Grab the actual date from the OMSZ webpage. First the year, the month and day are taken
+        # from the line from where I take the temperature values!
         omsz_table_actual_year = (soup.find_all('option', class_='akt')[0].get_text())[:4]
         omsz_table_first_month = ''.join(map(str, [value for month, value in months.items() if month == omsz_date[0]]))
         omsz_table_first_day = omsz_date[1].strip('.')
@@ -76,17 +76,15 @@ def omsz_scrape():
         str_omsz_actual_first_date = '-'.join([omsz_table_actual_year, omsz_table_first_month, omsz_table_first_day])
         omsz_actual_first_date = datetime.datetime.strptime(str_omsz_actual_first_date, '%Y-%m-%d').date()
 
-        # Creating an empty dataframe to store the data # Not necessary
-        #tMinMax_omsz_df = DataFrame(columns=mycolumns)
 
         # If omsz actual date is equal with today's date, then take the value from the second row of the table ->
         # to have the forecast for the next day
         if str_date_today == str_omsz_actual_first_date:
             tMinMax_omsz_df = [ now_time,
-                        'omsz_fcst_for_day1', 'OMSZ', str_date_tomorrow, omsz_city,
+                            'omsz_fcst_for_day1', 'OMSZ', str_date_tomorrow, omsz_city,
                             str(soup.find_all('td', class_='T N rbg1')[0].get_text()),
-                            str(soup.find_all('td', class_='T X rbg1')[0].get_text()) ]
-
+                            str(soup.find_all('td', class_='T X rbg1')[0].get_text())
+                            ]
 
         # If there is a one day difference between the actual date and the omsz actual date, then
         # take the value from the first row of the table. Normally it shouldn't happen!
@@ -94,8 +92,8 @@ def omsz_scrape():
             tMinMax_omsz_df = [ now_time,
                         'omsz_fcst_for_day1', 'OMSZ', str_date_tomorrow, omsz_city,
                             str(soup.find_all('td', class_='T N rbg0')[0].get_text()),
-                            str(soup.find_all('td', class_='T X rbg0')[0].get_text()) ]
-
+                            str(soup.find_all('td', class_='T X rbg0')[0].get_text())
+                            ]
         else:
             print('Problem with OMSZ data!')
             logfile_text+'\nProblem with OMSZ data!'
@@ -107,6 +105,11 @@ def omsz_scrape():
 
 def idokep_scrape():
 
+    # Scraping data from the webpage of the Időkép.hu website
+    # It collects the date, the city name, the forecasted minimum and maximum temperature.
+    # The output is a list, containing the DataType id, Provider (Idokep), date of the forecast, city and
+    # the two temperature parameters. Numbers are integers.
+
     # Date today, datetime and str formats
     date_today = datetime.date.today()
 
@@ -117,7 +120,7 @@ def idokep_scrape():
     try:
         url_idokep = 'http://www.idokep.hu/elorejelzes/Budapest'
 
-        # At first we create a Beautiful Soup data, this will allow us to easily search for data on the webpage
+        # Create Beautiful Soup data, this will allow us to easily search for data on the webpage
         page = urllib.request.urlopen(url_idokep).read()
         soup = BeautifulSoup(page, 'lxml')
 
@@ -138,7 +141,6 @@ def idokep_scrape():
         text_month_tomorrow_idokep = list(map(str, [key for key, value in months_M.items() if
                                     value == month_tomorrow]))[0] + ' ' + str_date_tomorrow1 + '.'
 
-
         # Get city: because the url contains the city name, it will be always Budapest. We could take it from the
         # url too, of course
         idokep_city = 'Budapest'
@@ -147,7 +149,6 @@ def idokep_scrape():
         lst = []
         for hit in soup.findAll('div', attrs={'class': "buborek-text"}):
             lst.append(hit.text)
-
 
         global idokep_Tmin_tomorrow
         #Scrape Tmin for tomorrow in the previous list
@@ -161,7 +162,6 @@ def idokep_scrape():
             if text_month_tomorrow_idokep in max and 'Maximum' in max:
                 idokep_Tmax_tomorrow = (max[21:].split(' '))[0]
 
-
         # Creating an empty dataframe for the final values + adding the values into the dataframe
         tMinMax_idokep_df = DataFrame(columns=mycolumns)
         tMinMax_idokep_df = [ now_time, 'idokep_fcst_for_day1', 'Idokep', str_date_tomorrow, idokep_city,
@@ -174,6 +174,11 @@ def idokep_scrape():
 
 def koponyeg_scrape():
 
+    # Scraping data from the webpage of the Köpönyeg.hu website
+    # It collects the date, the city name, the forecasted minimum and maximum temperature.
+    # The output is a list, containing the DataType id, Provider (Idokep), date of the forecast, city and
+    # the two temperature parameters. Numbers are integers.
+
     # Date today, datetime and str formats
     date_today = datetime.date.today()
 
@@ -182,8 +187,6 @@ def koponyeg_scrape():
 
     try:
         url_koponyeg = 'http://koponyeg.hu/t/Budapest'
-
-
         page = urllib.request.urlopen(url_koponyeg).read()
         soup = BeautifulSoup(page, 'lxml')
 
@@ -194,18 +197,18 @@ def koponyeg_scrape():
         # Get city name
         koponyeg_city = 'Budapest'
 
+        # Get year
         koponyeg_year = (soup.find('span', attrs={'id': "headerdate_sticky"})).text[:4]
 
-
+        # Get month
         lst_month = []
         for date in soup.findAll('div', attrs={'class': "honap"}):
             lst_month.append(date.text)
 
-
+        # Get day
         lst_day1 = []
         for date in soup.findAll('div', attrs={'class': "nap"}):
             lst_day1.append(date.text)
-
 
         lst_day = []
         for n in lst_day1:
@@ -220,13 +223,11 @@ def koponyeg_scrape():
         for n in range(len(lst_day)):
             lst_month_day.append(lst_month[n] + ' ' + lst_day[n])
 
-
         #Building the date of tomorrow
-
         koponyeg_month_tomorrow = list(map(str, [value for key, value in months_short.items()
                                                 if key == lst_month_day[1][0:3]]))
 
-
+        # Check if tomorrow is the 1st of January
         if ''.join(koponyeg_month_tomorrow) == '01' and lst_month_day[1].split()[1] == '01':
             koponyeg_year = str(int(koponyeg_year) + 1)
             koponyeg_DATE_tomorrow = koponyeg_year + '-' + ''.join(koponyeg_month_tomorrow)\
@@ -235,20 +236,19 @@ def koponyeg_scrape():
             koponyeg_DATE_tomorrow = koponyeg_year + '-' + ''.join(koponyeg_month_tomorrow)\
                                     + '-' + lst_month_day[1].split()[1]
 
-
+        # Minimum temperatures
         lst_min = []
         for hit in soup.findAll('div', attrs={'class': "min_15napos"}):
             lst_min.append(hit.text.strip('\n').strip('°C'))
-
 
         global min_tomorrow
         if koponyeg_DATE_tomorrow == str_date_tomorrow:
             min_tomorrow = lst_min[1][22:]
 
+        # Maximum temperatures
         lst_max = []
         for hit in soup.findAll('div', attrs={'class': "max_15napos"}):
             lst_max.append(hit.text.strip('\n').strip('°C'))
-
 
         global max_tomorrow
         if koponyeg_DATE_tomorrow == str_date_tomorrow:
@@ -265,8 +265,8 @@ def koponyeg_scrape():
 
 def ogimet_scrape():
 
-    # Creating the url for the request. Data from Ogimet for TMAX!, 1 day prior to the day of scrape day.
-    # For TMIN, use the day of the scraping
+    # Creating the url for the request. Data from Ogimet for TMAX!, 1 day prior to the day of the scraping day.
+    # For TMIN, use the actual day
 
     str_date_today = str(datetime.date.today()).replace('-', '')
     str_date_today_sima = str(datetime.date.today())
@@ -291,13 +291,11 @@ def ogimet_scrape():
         synop_code_Tmin = (soupfile_Tmin.strip('\n')[soupfile_Tmin.strip('\n').index(' 333'):])[5:10]
 
         global synop_Tmin
-
         if synop_code_Tmin[1] == '0':
             synop_Tmin = synop_code_Tmin[2:4] + '.' + synop_code_Tmin[4:5]
 
         elif synop_code_Tmin[1] == '1':
             synop_Tmin = '-' + synop_code_Tmin[2:4] + '.' + synop_code_Tmin[4:5]
-
 
         Tmin = int(round(float(synop_Tmin)))
 
@@ -309,13 +307,11 @@ def ogimet_scrape():
         synop_code_Tmax = (soupfile_Tmax.strip('\n')[soupfile_Tmax.strip('\n').index(' 333'):])[5:10]
 
         global synop_Tmax
-
         if synop_code_Tmax[1] == '0':
             synop_Tmax = synop_code_Tmax[2:4] + '.' + synop_code_Tmax[4:5]
 
         elif synop_code_Tmax[1] == '1':
             synop_Tmax = '-' + synop_code_Tmax[2:4] + '.' + synop_code_Tmax[4:5]
-
 
         Tmax = int(round(float(synop_Tmax)))
 
@@ -327,26 +323,29 @@ def ogimet_scrape():
 
     return tMinMax_ogimet_df
 
-
-#Fetching login data from text file
-cred_list = []
-with open('/home/pi/Documents/logfiles/login_metgrab_database.txt', 'r') as loginfile:
-    for item in loginfile.read().split(','):
-        cred_list.append(item)
-
-user = cred_list[0]
-pword = cred_list[1]
-	
-#Try to connect to the PostgreSQL database
 try:
-	dsn = "dbname='met_project' user='"+user+"' host = 'localhost' password='"+pword+"'"
-	conn = psycopg2.connect(dsn)
-	print('Successful login!')
-	conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-	logfile_txt.append('OK: Successful login to met_project database')
+    # Fetching login data from text file
+    cred_list = []
+    with open('/home/pi/Documents/logfiles/login_metgrab_database.txt', 'r') as loginfile:
+        for item in loginfile.read().split(','):
+            cred_list.append(item)
 
-except Exception as e1:
-    print(str(e1))
+    user = cred_list[0]
+    pword = cred_list[1]
+except:
+    print('Username or password incorrect!')
+    logfile_txt.append('Username or password incorrect!')
+	
+# Connect to the PostgreSQL database
+try:
+    dsn = "dbname='met_project' user='"+user+"' host = 'localhost' password='"+pword+"'"
+    conn = psycopg2.connect(dsn)
+    print('Successful login!')
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    logfile_txt.append('OK: Successful login to met_project database')
+    cur = conn.cursor()
+
+except:
     print('Unable to connect to the database!')
     print('Data will be written into the grabbed.csv file!')
     logfile_txt.append('ERROR: Unable to connect to the database. Data will be written into the grabbed.csv file!')
@@ -356,7 +355,6 @@ except Exception as e1:
         new_list = omsz_scrape() + idokep_scrape()[1:] + koponyeg_scrape()[1:] + ogimet_scrape()[1:]
         with open('/home/pi/Documents/python_projects/metgrab/grabbed.csv', 'a') as csvfile:
             csv_write = csv.writer(csvfile, dialect='excel', delimiter=';')
-
             #csv_write.writerows([mycolumns]) #If there is no header at the beginning
             csv_write.writerows([new_list])
         return
@@ -364,11 +362,7 @@ except Exception as e1:
     print('Data successfully written into the csv file.')
     logfile_txt.append('Data successfully written into the csv file.')
 
-
-# Define a cursor to work with
-cur = conn.cursor()
-
-#Inserting OMSZ data into the table
+# Inserting OMSZ data into the table
 try:
     sql_omsz = "INSERT INTO omsz_table (TimeOfRequest, DataType, Provider, Fcst_Date, Fcst_City, Fcst_Tmin_for_day1, Fcst_Tmax_for_day1) VALUES (%s, %s, %s, %s, %s, %s, %s);"
     omsz_data = tuple(omsz_scrape())
@@ -383,7 +377,7 @@ except:
     #cur.execute(sql_omsz_error, omsz_error_data)
     logfile_txt.append('ERROR: Problem with OMSZ data, not inserted into omsz_table!')
 
-#Inserting Idokep data into the table
+# Inserting Idokep data into the table
 try:
     sql_idokep = "INSERT INTO idokep_table (TimeOfRequest, DataType, Provider, Fcst_Date, Fcst_City, Fcst_Tmin_for_day1, Fcst_Tmax_for_day1) VALUES (%s, %s, %s, %s, %s, %s, %s);"
     idokep_data = tuple(idokep_scrape())
@@ -398,7 +392,7 @@ except:
     #cur.execute(sql_idokep_error, idokep_error_data)
     logfile_txt.append('ERROR: Problem with Idokep data, not inserted into idokep_table!')
 
-#Inserting Koponyeg data into the table
+# Inserting Koponyeg data into the table
 try:
     sql_koponyeg = "INSERT INTO koponyeg_table (TimeOfRequest, DataType, Provider, Fcst_Date, Fcst_City, Fcst_Tmin_for_day1, Fcst_Tmax_for_day1) VALUES (%s, %s, %s, %s, %s, %s, %s);"
     koponyeg_data = tuple(koponyeg_scrape())
@@ -413,7 +407,7 @@ except:
     #cur.execute(sql_koponyeg_error, koponyeg_error_data)
     logfile_txt.append('ERROR: Problem with Koponyeg data, not inserted into koponyeg_table!')
 
-#Inserting Ogimet data into the table
+# Inserting Ogimet data into the table
 try:
     sql_ogimet = "INSERT INTO ogimet_table (TimeOfRequest, DataType, Provider, Obs_City, Tmin_Date, Obs_Tmin, Tmax_Date, Obs_Tmax) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
     ogimet_data = tuple(ogimet_scrape())
@@ -445,7 +439,7 @@ if any('Unable' in s for s in logfile_txt) or any('Problem' in s for s in logfil
 
     send_to = cred_list_gmail[0]
     mail_subject = 'metgrab.py log message'
-    mail_text = 'There is a problem with the script, please check the logfile!'
+    mail_text = "\n".join(logfile_txt)
 
     #GMail creditentials
     gmail_sender = cred_list_gmail[0]
@@ -466,7 +460,7 @@ if any('Unable' in s for s in logfile_txt) or any('Problem' in s for s in logfil
         ])
 
     #Sending the mail
-    #smtpObj.sendmail(gmail_sender, [send_to], mail_body)
+    smtpObj.sendmail(gmail_sender, [send_to], mail_body)
     print('Email sent')
 
     smtpObj.quit()
