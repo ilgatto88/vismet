@@ -10,6 +10,7 @@ now_time = '{0:%Y-%m-%d}'.format(datetime.datetime.now())
 
 #Counting errors
 error_count = 0
+error_msg = 'Errors, if any:\n'
 
 #database check parameter
 dbcheck = True
@@ -35,6 +36,7 @@ try:
     cur = conn.cursor()
 except:
     error_count += 101
+    error_msg + ' Database not available!'
     print('Database not available!')
     dbcheck = False
 
@@ -49,6 +51,7 @@ if dbcheck:
     except:
         print("Problem with OMSZ data, cannot fetch last row!")
         error_count += 1
+        error_msg + 'Cannot fetch OMSZ data! '
 
     #######Fetching Idokep data#######
     try:
@@ -58,6 +61,7 @@ if dbcheck:
     except:
         print("Problem with Idokep data, cannot fetch last row!")
         error_count += 1
+        error_msg + 'Cannot fetch Időkép data! '
 
     #######Fetching Koponyeg data#######
     try:
@@ -67,6 +71,7 @@ if dbcheck:
     except:
         print("Problem with Koponyeg data, cannot fetch last row!")
         error_count += 1
+        error_msg + 'Cannot fetch Köpönyeg data! '
 
     #######Fetching Ogimet data#######
     try:
@@ -76,30 +81,35 @@ if dbcheck:
     except:
         print("Problem with Ogimet data, cannot fetch last row!")
         error_count += 1
+        error_msg + 'Cannot fetch Ogimet data! '
 
     #######Checking date of the last row of omsz_table#######
     if (now_time == fetched_data_omsz[0][0][0:10]) and (fetched_data_omsz[0][1] != None) and (fetched_data_omsz[0][2] != None):
         print('OMSZ OK!')
     else:
         error_count += 1
+        error_msg + 'Problem with OMSZ data! '
 
     #Checking date of the last row of idokep_table#######
     if (now_time == fetched_data_idokep[0][0][0:10]) and (fetched_data_idokep[0][1] != None) and (fetched_data_idokep[0][2] != None):
         print('Idokep OK!')
     else:
         error_count += 1
+        error_msg + 'Problem with Időkep data! '
 
     #Checking date of the last row of koponyeg_table#######
     if (now_time == fetched_data_koponyeg[0][0][0:10]) and (fetched_data_koponyeg[0][1] != None) and (fetched_data_koponyeg[0][2] != None):
         print('Koponyeg OK!')
     else:
         error_count += 1
+        error_msg + 'Problem with Köpönyeg data! '
 
     #Checking date of the last row of ogimet_table#######
     if (now_time == fetched_data_ogimet[0][0][0:10]) and (fetched_data_ogimet[0][1] != None) and (fetched_data_ogimet[0][2] != None):
         print('Ogimet OK!')
     else:
         error_count += 1
+        error_msg + 'Problem with Ogimet data! '
 
 print('Number of errors: ' + str(error_count))
 
@@ -118,9 +128,9 @@ if error_count > 0:
     send_to = cred_list_gmail[0]
     mail_subject = 'metgrab.py warning message'
     if error_count < 100:
-        mail_text = 'Database is missing some data, please check it! ' + 'Number of wrong or incomplete tables: ' + str(error_count)
+        mail_text = 'Database is missing some data, please check it!\nNumber of wrong or incomplete tables: ' + str(error_count) + '\n' + error_msg
     else:
-        mail_text = 'Database connection problem! Please check every table.'
+        mail_text = 'Database connection problem!'
 
     #GMail creditentials
     gmail_sender = cred_list_gmail[0]
@@ -147,5 +157,5 @@ if error_count > 0:
     smtpObj.quit()
 
 else:
+    print('Starting vismet.py...')
     os.system('python3 /home/pi/learning_python/vismet/vismet.py')
-    print('vismet.py has been started...')
