@@ -3,6 +3,7 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from pandas import DataFrame
 import datetime
 import smtplib
+import os
 
 #Actual time
 now_time = '{0:%Y-%m-%d}'.format(datetime.datetime.now())
@@ -144,3 +145,7 @@ if error_count > 0:
     print('Warning e-mail sent')
 
     smtpObj.quit()
+
+else:
+    os.system('python3 /home/pi/learning_python/vismet/vismet.py')
+    print('vismet.py has been started...')
