@@ -100,6 +100,8 @@ def omsz_scrape():
     
     except:
         tMinMax_omsz_df = [ now_time, 'omsz_fcst_for_day1', None, None, None, None, None ]
+        print('Problem with OMSZ data, None values inserted.')
+        logfile_txt.append('Problem with OMSZ data, None values inserted.')
 
     return tMinMax_omsz_df
 
@@ -169,6 +171,8 @@ def idokep_scrape():
     
     except:
         tMinMax_idokep_df = [ now_time, 'idokep_fcst_for_day1', None, None, None, None, None ]
+        print('Problem with Időkép data, None values inserted.')
+        logfile_txt.append('Problem with Időkép data, None values inserted.')
 
     return tMinMax_idokep_df
 
@@ -259,6 +263,8 @@ def koponyeg_scrape():
                                 min_tomorrow, max_tomorrow]
     except:
         tMinMax_koponyeg_df = [ now_time, 'koponyeg_fcst_for_day1', None, None, None, None, None ]
+        print('Problem with Köpönyeg data, None values inserted.')
+        logfile_txt.append('Problem with Köpönyeg data, None values inserted.')
 
     return tMinMax_koponyeg_df
 
@@ -320,6 +326,8 @@ def ogimet_scrape():
                           str_date_today_sima, Tmin, str_date_yesterday_sima, Tmax ]
     except:
         tMinMax_ogimet_df = [ now_time, 'ogimet_obs_data', None, None, None, None, None, None ]
+        print('Problem with Ogimet data, None values inserted.')
+        logfile_txt.append('Problem with Ogimet data, None values inserted.')
 
     return tMinMax_ogimet_df
 
