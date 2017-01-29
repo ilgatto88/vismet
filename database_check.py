@@ -3,7 +3,6 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from pandas import DataFrame
 import datetime
 import smtplib
-import os
 
 #Actual time
 now_time = '{0:%Y-%m-%d}'.format(datetime.datetime.now())
@@ -128,8 +127,7 @@ if error_count > 0:
     send_to = cred_list_gmail[0]
     mail_subject = 'metgrab.py warning message'
     if error_count < 100:
-        mail_text = 'Database is missing some data, please check it!\nNumber of wrong or incomplete tables: '
-        + str(error_count) + '\n' + error_msg + '\nDiagram has not been drawn.'
+        mail_text = 'Database is missing some data, please check it!\nNumber of wrong or incomplete tables: ' + str(error_count) + '\n' + error_msg + 'Diagram has not been drawn.'
     else:
         mail_text = 'Database connection problem!' + '\nDiagram has not been drawn.'
 
@@ -154,9 +152,10 @@ if error_count > 0:
     #Sending the mail
     smtpObj.sendmail(gmail_sender, [send_to], mail_body)
     print('Warning e-mail sent')
-
     smtpObj.quit()
+    with open('/home/pi/working_python/metgrab/database_check_output.txt', 'w') as textfile:
+        textfile.write('0')
 
 else:
-    print('Starting vismet.py...')
-    os.system('python3 /home/pi/working_python/metgrab/vismet.py')
+    with open('/home/pi/working_python/metgrab/database_check_output.txt', 'w') as textfile:
+        textfile.write('1')
