@@ -321,6 +321,7 @@ def graph_met():
     idokep_rmse_lastval = providers_rmse5day_df['rmse5day_idokep'][len(providers_rmse5day_df['rmse5day_idokep'])-1]
     koponyeg_rmse_lastval = providers_rmse5day_df['rmse5day_koponyeg'][len(providers_rmse5day_df['rmse5day_koponyeg'])-1]
 
+
     #Adjusting position on the y axis
     if omsz_rmse_lastval >= idokep_rmse_lastval and omsz_rmse_lastval >= koponyeg_rmse_lastval:
         if idokep_rmse_lastval >= koponyeg_rmse_lastval:
@@ -366,22 +367,23 @@ def graph_met():
             print('Idokep annotation y position changed:', idokep_ydiff)
         if koponyeg_ydiff != 0:
             print('Koponyeg annotation y position changed:', koponyeg_ydiff)
+
     
-    ax1_left.annotate('\u25b2' + ': ' + str("%.2f" % round(omsz_rmse_lastval, 2)),  # Value of annotation
+    ax1_left.annotate('\u25b2' + ': ' + str("%.2f" % omsz_rmse_lastval),  # Value of annotation
                         (16.0, omsz_rmse_lastval),
                         bbox=bbox_props,
                         color=cost_settings['set1'][0][2],
                         size=8,
                         xytext = (16.3, omsz_rmse_lastval + omsz_ydiff))
     
-    ax1_left.annotate('\u25bc' + ': ' + str("%.2f" % round(idokep_rmse_lastval, 1)),  # Value of annotation
+    ax1_left.annotate('\u25bc' + ': ' + str("%.2f" % idokep_rmse_lastval),  # Value of annotation
                         (16.0, idokep_rmse_lastval),
                         bbox=bbox_props,
                         color=cost_settings['set1'][1][2],
                         size=8,
                         xytext = (16.3, idokep_rmse_lastval + idokep_ydiff))
 
-    ax1_left.annotate('\u25cf' + ': ' + str("%.2f" % round(koponyeg_rmse_lastval, 1)),  # Value of annotation
+    ax1_left.annotate('\u25cf' + ': ' + str("%.2f" % koponyeg_rmse_lastval),  # Value of annotation
                         (16.0, koponyeg_rmse_lastval),
                         bbox=bbox_props,
                         color=cost_settings['set1'][2][2],
