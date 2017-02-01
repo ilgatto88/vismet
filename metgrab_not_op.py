@@ -96,7 +96,7 @@ def omsz_scrape():
                             ]
         else:
             print('Problem with OMSZ data!')
-            logfile_text+'\nProblem with OMSZ data!'
+            logfile_txt.append('\nProblem with OMSZ data!')
     
     except:
         tMinMax_omsz_df = [ now_time, 'omsz_fcst_for_day1', None, None, None, None, None ]
